@@ -750,3 +750,60 @@ One entry, from the adoption-system proposals reviewed on 2026-08-20. Given its 
 - **Cost beyond the skill itself, so it is not underestimated:** a new catalogue entry, samples, and eval coverage, per the standing pattern for any new component.
 - **Source material:** the full proposal is `_local/onboarding/02-proposal-askit-onboard-skill.md`, written in why-gate shape so it can be promoted verbatim. **It is gitignored and is not a followable link from this file.**
 - **Status:** backlog, green-lit, unversioned. **Deliberately carries no version**, per the v1.15.0 lesson that assigning a line a version it will not get is how it goes stale unnoticed.
+
+
+## Dogfooding intake: critique-skills authoring-skills pass (2026-09-15)
+
+Raised while ruling critique-skills' own E11, which asked whether to adopt the 2026-08-02 mandate to
+build that repository's v0.2.0 components through this toolkit's `askit-*` authoring skills. The
+ruling was **adopt**, scoped to `askit-build-skill` and `askit-evaluate`, in the fallback mode the
+mandate itself defines (reading `SKILL.md` from a sibling checkout, because the plugin is not
+installed at user scope). These two findings are the mandate's own backlog, filed as it requires.
+
+**The honest framing, because it is the useful part.** This toolkit's **validator** half is adopted
+and load-bearing in critique-skills: it runs on every push and produces that repository's
+conformance claim. Its **authoring** half has **zero uses, ever**, there. The mandate to use it was
+written on 2026-08-02 and has been broken at every opportunity since, by agents that had it in
+context. That is not primarily a discipline failure, and reading it as one would waste the signal.
+
+### E65 - a repo built a 61-item backlog with ten bespoke agents while `askit-backlog` sat unused  [adoption, effort M]
+
+- **Target:** `skills/askit-backlog/SKILL.md`, and the discoverability question underneath it.
+- **What happened:** on 2026-09-14 critique-skills built `docs/internal/backlog/` from nothing: 61
+  enhancement items plus 4 component proposals, produced by **ten purpose-written agents sweeping
+  eight evidence surfaces**, 81 raw candidates deduplicated to 64, with a completeness critic
+  re-opening cited files afterwards. `askit-backlog` exists, was in the sibling checkout the whole
+  time, and was never opened.
+- **Why it matters more than one missed invocation:** the agent doing that work had the dogfooding
+  mandate in its context and still did not reach for the skill. **A skill that loses to
+  ten-agents-from-scratch, in its own family, with a standing mandate to use it, has a
+  discoverability or a perceived-fit problem**, and the ten-agent output is a natural baseline to
+  measure against.
+- **What would actually settle it:** run `askit-backlog` over the same eight evidence surfaces and
+  diff its output against the 61 committed items. Either it recovers most of them, and the finding
+  is discoverability, or it does not, and the finding is scope. **Both are worth knowing and neither
+  is known today.**
+- **Mode:** fallback (sibling checkout, plugin not installed at user scope), so this says nothing
+  about triggering or packaging. A skill never invoked cannot fail to trigger.
+- **Status:** backlog (recorded 2026-09-15, from critique-skills).
+
+### E66 - `askit-decision` was not used for an ADR in a repo whose ADR discipline is a standing track  [adoption, effort S]
+
+- **Target:** `skills/askit-decision/SKILL.md`.
+- **What happened:** critique-skills wrote ADR 0034 (the v0.1.x exit-gate declaration) by hand on
+  2026-09-14, under the same mandate, in a repository whose own standing tracks require an ADR for
+  every load-bearing decision in MADR format. That is the single most favourable case
+  `askit-decision` could be handed, and it still was not reached for.
+- **The likely reason, offered as a hypothesis and not a conclusion:** ADR 0034 is an unusual
+  document. Most of its work is refusing to declare something, and it rules a sub-question (whether
+  a site-guard defect resets the exit-gate clock) on the record while the answer was still free. If
+  `askit-decision` is shaped around deciding rather than around **declining to decide and saying
+  why**, that is a content gap worth naming rather than an adoption one.
+- **What would settle it:** hand `askit-decision` ADR 0034's inputs and compare. The ADR is public
+  in critique-skills at `docs/internal/decisions/0034-v0.1.x-exit-gate-declaration.md`.
+- **Status:** backlog (recorded 2026-09-15, from critique-skills).
+
+**What critique-skills is doing next, so this intake has a follow-up rather than a filing.**
+`critique-forms` is the next skill it builds and will be built through `askit-build-skill` in
+fallback mode, with `askit-evaluate` run against the trigger eval sets, which that repository
+records as never having been through a grader. Friction from that build lands here as it occurs.
