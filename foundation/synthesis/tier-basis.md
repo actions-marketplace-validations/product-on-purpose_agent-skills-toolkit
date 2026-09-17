@@ -37,8 +37,8 @@ Component types the tier adds: skills, references and assets, `AGENTS.md`, MCP.
 | References and assets bundle with a skill | progressive disclosure is in the spec | **pinned** | `upstream-pin.json` `docs/specification.mdx` | 2026-08-11 |
 | Both agents read a root `AGENTS.md` | identical format, both read root | **`unverified`** | nothing | - |
 | One portable `.mcp.json` serves both | each native manifest carries an `mcpServers` pointer | **`unverified`** | nothing | - |
-| `U14` - agents must not declare `hooks`, `mcpServers`, `permissionMode` | the runtime refuses these fields for plugin-shipped agents | **pinned, quote** | `plugin-agent-unsupported-fields` | 2026-08-15 |
-| `U14`'s remediation list | which fields the runtime *does* support | **pinned, quote** | `plugin-agent-supported-fields` | 2026-08-16 |
+| `U14` - agents must not declare `hooks`, `mcpServers`, `permissionMode` | the runtime refuses these fields for plugin-shipped agents | **pinned, quote** | `plugin-agent-unsupported-fields` | 2026-09-16 |
+| `U14`'s remediation list | which fields the runtime *does* support | **pinned, quote** | `plugin-agent-supported-fields` | 2026-09-16 |
 | `U15` - every `.md` under `agents/` registers | the runtime loads every `.md`, including `README.md` | **pinned, PROBE** | `agents-dir-registers-every-md`. **Blocks from 2026-09-19** | 2026-08-19 |
 | `U15`'s recursion invariant | `agents/` is scanned recursively with scoped identifiers | **pinned, quote** | `agents-scanned-recursively` | 2026-08-15 |
 | `isRuntimeAgentFile`'s width | a filename containing a colon is excluded | **pinned, quote** | `agent-filename-colon-excluded` | 2026-08-16 |
