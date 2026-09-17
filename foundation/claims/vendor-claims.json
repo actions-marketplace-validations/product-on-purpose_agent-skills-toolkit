@@ -53,25 +53,25 @@
       "id": "plugin-agent-unsupported-fields",
       "kind": "quote",
       "source": "cc-plugins-reference",
-      "claim": "For security reasons, hooks, mcpServers, and permissionMode are not supported for plugin-shipped agents",
+      "claim": "For security reasons, plugin-shipped agents don't support hooks, mcpServers, or permissionMode",
       "dependsOn": [
         "U14 (agent-restricted-fields) - the whole check",
         "the marketplace A6 reading, which imports the same field list",
-        "ADR 0045, and STANDARD.md sec 3.3"
+        "ADR 0045, and STANDARD.md sec 2.1 (the U14 bullet, which quotes this sentence verbatim)"
       ],
-      "verifiedOn": "2026-08-15",
+      "verifiedOn": "2026-09-16",
       "onChange": "ASYMMETRIC (ADR 0045). A field REMOVED from the unsupported list is green-ward - update the constant, bump the read date, note it in CHANGELOG. A field ADDED is red-ward: a new Standard minor with finding-level migration metadata, never a bump of U14's own since."
     },
     {
       "id": "plugin-agent-supported-fields",
       "kind": "quote",
       "source": "cc-plugins-reference",
-      "claim": "Plugin agents support name, description, model, effort, maxTurns, tools, disallowedTools, skills, memory, background, and isolation frontmatter fields.",
+      "claim": "Plugin agents support name, description, model, effort, maxTurns, tools, disallowedTools, skills, memory, background, [omitClaudeMd](/docs/en/sub-agents#supported-frontmatter-fields), and isolation frontmatter fields.",
       "dependsOn": [
         "PLUGIN_AGENT_SUPPORTED_FIELDS, quoted in every U14 finding as the remediation"
       ],
-      "verifiedOn": "2026-08-16",
-      "onChange": "Re-read the field list and update the constant. The list appears in user-facing remediation, so a stale one sends authors to a field the runtime does not accept."
+      "verifiedOn": "2026-09-16",
+      "onChange": "Re-read the field list and update the constant. The list appears in user-facing remediation, so a stale one sends authors to a field the runtime does not accept. THE MARKDOWN LINK IS LOAD-BEARING: the source serves text/markdown, and on 2026-09-16 the page linked omitClaudeMd to /docs/en/sub-agents#supported-frontmatter-fields. normalizeForMatch folds case, quotes, dashes, backticks, asterisks, underscores and whitespace, but NOT link syntax, so the bare field name does not match and this claim reports MISSING without the brackets. Measured, not assumed. If a future re-read finds the link gone or its target moved, store whatever the page then serves - and if that keeps recurring, the durable fix is to teach normalizeForMatch to fold [text](url) to text rather than to keep re-pinning a URL."
     },
     {
       "id": "commands-merged-into-skills",
