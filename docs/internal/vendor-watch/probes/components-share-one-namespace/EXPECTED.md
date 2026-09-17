@@ -145,3 +145,65 @@ grep -o 'Probe duplicate, side [AB]'  ->  Probe duplicate, side A
 **The Skill tool fired under the BARE name**, with no plugin prefix and no disambiguation, and side A answered. That is the first outcome in the table: a shared pool, one winner, silently.
 
 Installing A before B and getting A **matches the install-order refinement** the 2026-08-20 pair established. It is a third data point in the same direction rather than a new finding. `verifiedOn` advances to 2026-08-24.
+
+## 2026-09-17: **CHANGED.** The bare name no longer resolves - it is refused with a disambiguation
+
+Run on **Claude Code 2.1.275**. The 2026-08-24 run was the third consecutive observation of a shared
+pool resolving silently to one side. That is no longer what happens.
+
+Both plugins still report a skill named `probe-duplicate` in their own inventory, and installing the
+second was **not** refused as a conflict. The change is in RESOLUTION:
+
+```
+CALL probe-duplicate   is_error=true
+  -> <tool_use_error>Unknown skill: probe-duplicate. Several skills match that name:
+     probe-collision-a:probe-duplicate, probe-collision-b:probe-duplicate - invoke one by its full name.</tool_use_error>
+```
+
+**This is the raw `tool_result`, not the model's account of it.** That distinction is the point of
+running headless with `stream-json`: the session's own summary of this run was accurate, but it did not
+have to be, and a probe that rests on a model's narration is not evidence.
+
+**Reproduced with the install order reversed** (B then A), per this folder's own protocol. Identical
+refusal; only the order the two candidates are LISTED IN follows install order. So the install-order
+refinement established on 2026-08-20 and corroborated on 2026-08-24 no longer has anything to refine -
+there is no winner to follow the order.
+
+| | 2026-08-24 (and the two runs before it) | 2026-09-17 |
+| --- | --- | --- |
+| Bare `probe-duplicate` | fired, silently, side A answered | **refused, `is_error=true`** |
+| Prefixed names | not exercised | both resolve: `probe-collision-a:probe-duplicate`, `probe-collision-b:probe-duplicate` |
+
+**This is the corrected row 2, and it is the case the 2026-08-20 note was written to protect.** That note
+warned that row 2 tests the LISTING while the claim is about RESOLUTION, and said to read row 2 as
+applying **only where the bare name fails to resolve or forces a disambiguation**. That is exactly what
+was observed. The 2026-08-20 fourth outcome - prefixed entries listed while the bare name still resolved
+silently - is not what happened here: the bare name was tried and it failed.
+
+## `verifiedOn` is NOT advanced, and that is the whole point
+
+Per this folder's README, a date is refreshed **as a record of a reading, never to make a run green**.
+The claim did not survive the reading, so bumping the date would convert a vendor change into a silent
+renewal - the single failure mode the probe mechanism exists to prevent. The probe therefore still
+blocks from **2026-09-24**, and that deadline is now a feature: it forces the decision.
+
+## What this does NOT settle
+
+**Do not retire anything on this record alone.** `onChange` says a namespacing runtime means
+`marketplace-skill-collision` and `marketplace-command-collision` should be RETIRED rather than
+graduated, and ADR 0051 says so explicitly. Two things must be answered first, and neither is answered
+here:
+
+1. **The claim is conditional on the agent.** Its own wording is "on any agent that **does not namespace
+   components by plugin**". This run measured **Claude Code only**. Codex is the other target this
+   project emits for, and whether it shares a namespace is untested. Retiring a marketplace check that
+   still protects Codex adopters on evidence gathered from Claude Code would be reasoning past the
+   measurement.
+2. **A refusal is not the same as no cost.** The harm the two checks warn about - the wrong component
+   silently winning - does appear to be gone on Claude Code. But a collision now makes the bare name
+   **unusable for every consumer of both plugins**, which is a different and still real cost. "Retire"
+   and "downgrade to a warn that describes the new failure" are different rulings and the choice
+   between them belongs in an ADR.
+
+Evidence for both runs was captured headlessly and the fixtures were removed afterwards
+(`claude plugin marketplace remove askit-probe-fixtures`, verified with `claude plugin list`).

@@ -133,7 +133,7 @@
         "the G8 exemption of agents/ from the meaningful-folder README requirement",
         "ADR 0046, and STANDARD.md sec 3.3"
       ],
-      "verifiedOn": "2026-08-24",
+      "verifiedOn": "2026-09-17",
       "reproduction": "Fixtures and step-by-step: docs/internal/vendor-watch/probes/agents-dir-registers-every-md/ (see EXPECTED.md for what each run observed, and probes/README.md for how to record the result). Install a plugin whose agents/ holds real-agent.md, README.md, _README.md and README.txt; list the registered subagents. Recorded in scripts/checks/folder-readme.mjs.",
       "onChange": "If the runtime starts EXCLUDING README.md or underscore-prefixed files, U15 loses its vendor grounding and becomes a house convention - which would change its provenance, and with it whether plain-plugin drops it."
     },
