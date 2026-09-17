@@ -179,14 +179,14 @@ function collisionsOver(members, pick, check, label, dirLabel) {
  *
  * Vendor-cited, quoted rather than paraphrased, from the Claude Code plugins reference
  * (https://code.claude.com/docs/en/plugins-reference - the older docs.claude.com path 301-redirects
- * here; read 2026-08-12):
+ * here; read 2026-09-16):
  *
  *   "Plugin agents support `name`, `description`, `model`, `effort`, `maxTurns`, `tools`,
- *    `disallowedTools`, `skills`, `memory`, `background`, and `isolation` frontmatter fields. The only
- *    valid `isolation` value is \"worktree\". For security reasons, `hooks`, `mcpServers`, and
- *    `permissionMode` are not supported for plugin-shipped agents."
+ *    `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, and `isolation` frontmatter
+ *    fields. The only valid `isolation` value is \"worktree\". For security reasons, plugin-shipped
+ *    agents don't support `hooks`, `mcpServers`, or `permissionMode`."
  *
- * Note the vendor's own wording is "not supported for security reasons", which is stronger and more
+ * Note the vendor's own reason is "For security reasons", which is stronger and more
  * precise than the "silently ignored" paraphrase this item was filed under: an author who writes one of
  * these believes they have configured something, and the field is refused rather than honored. Same
  * silent-no-op class as the v1.10.0 phantom-subagent discovery.
