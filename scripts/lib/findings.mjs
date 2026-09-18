@@ -28,6 +28,26 @@ export const PROVENANCE = Object.freeze({ OBJECTIVE: "objective", VENDOR: "vendo
  * known" and fall back to a file-level location - never invent line 1, which would fabricate evidence.
  * @returns {{check:string,severity:"error"|"warn",message:string,file:string|null,reqId:string|null,migration:{capAt:string,until:string,reason:string}|null,line:number|null}}
  */
+/**
+ * OPERATOR, NOT CONFORMANCE (F-011, the grader config drags the tier down).
+ *
+ * An operator finding is about the GRADER'S OWN configuration - `askit.config.json`, the file that
+ * selects the rubric - and says nothing about the plugin being graded. Nothing else in the codebase
+ * sets the flag; `scripts/lib/config.mjs` is its only producer.
+ *
+ * The predicate lives here, next to the finding shape, because three surfaces have to agree on it and
+ * disagreement is the defect: the tier report (scripts/tier-report.mjs), the gate exit and counts, and
+ * the terminal/annotation output (scripts/check.mjs). A finding with a null `reqId` buckets as
+ * `universal` under tierForReq, so before the flag existed a trailing comma in an operator's config
+ * took a conforming Bronze plugin to "Tier: None" with exit 1 - a confident conformance verdict about
+ * a file the plugin does not own.
+ *
+ * The flag is ADDITIVE and changes no severity: it moves where a finding is counted, printed and
+ * exited on, never what it says or how loud it is. `resolveFindings` spreads `...f`, so it survives
+ * resolution and reaches every consumer, including `--json`.
+ */
+export const isOperatorFinding = (f) => f?.operator === true;
+
 export function finding(check, severity, message, opts = {}) {
   if (severity !== SEVERITY.ERROR && severity !== SEVERITY.WARN) {
     throw new Error(`invalid severity: ${severity}`);

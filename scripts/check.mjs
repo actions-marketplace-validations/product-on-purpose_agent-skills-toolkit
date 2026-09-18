@@ -14,7 +14,8 @@ import { statSync } from "node:fs";
 import { loadPlugin } from "./lib/load-plugin.mjs";
 import { runAllChecks, provenanceByReq } from "./lib/registry.mjs";
 import { SINCE_BY_REQ } from "./lib/standard-gate.mjs";
-import { loadConfig, publicConfig, withGraderOptions } from "./lib/config.mjs";
+import { loadConfig, publicConfig, withGraderOptions, ORIGIN } from "./lib/config.mjs";
+import { isOperatorFinding } from "./lib/findings.mjs";
 import { PROFILES } from "./lib/profiles.mjs";
 import { resolveFindings, gatingFindings } from "./lib/resolve-config.mjs";
 import { computeTierReport, humanLine } from "./tier-report.mjs";
@@ -55,12 +56,82 @@ export function runGate(root, ctx = loadPlugin(root), { strict = false, mode, pr
   // for every member without that scope needing a merge of its own.
   const effectiveConfig = withGraderOptions(config, { mode, profile });
   const resolved = resolveFindings([...configFindings, ...raw], effectiveConfig, provenanceByReq(), { pinned, sinceByReq: SINCE_BY_REQ });
+  // F-011: PARTITION, not a filter. Operator findings stay in `findings` - every --json and SARIF
+  // consumer keeps seeing them - but they are removed from the grade, because askit.config.json is the
+  // grader's rubric file and a defect in it is not a conformance defect of the plugin.
+  const conformance = resolved.filter((f) => !isOperatorFinding(f));
+  const operator = resolved.filter(isOperatorFinding);
   // Project effectiveSeverity onto .severity so gateExitFromFindings (the tier ceiling) is UNCHANGED.
-  const forGate = gatingFindings(resolved).map((f) => ({ ...f, severity: f.effectiveSeverity }));
-  const { errorCount, exitCode } = gateExitFromFindings(forGate, ctx?.library?.data?.tier);
-  const warnCount = resolved.filter((f) => f.effectiveSeverity === "warn" && !f.suppressed).length;
+  const forGate = gatingFindings(conformance).map((f) => ({ ...f, severity: f.effectiveSeverity }));
+  const { errorCount, exitCode: gateExit } = gateExitFromFindings(forGate, ctx?.library?.data?.tier);
+  const warnCount = conformance.filter((f) => f.effectiveSeverity === "warn" && !f.suppressed).length;
+  const operatorErrorCount = operator.filter((f) => f.effectiveSeverity === "error" && !f.suppressed).length;
+  // Exit 2 is this CLI's EXISTING operator-error code (an unknown flag, an invalid --mode or --profile,
+  // a root that is not a directory), so a broken rubric joins the family it belongs to rather than
+  // inventing a code. It outranks the gate's 1 deliberately: a run whose rubric did not load did not
+  // grade what the operator asked for, so it must not report a clean 0 - and reporting 1 would say "the
+  // plugin failed", which is the falsehood F-011 is about. Decided HERE, in runGate, so the --json
+  // document's own `exitCode` field and the process exit code cannot disagree.
+  const exitCode = operatorErrorCount > 0 ? 2 : gateExit;
   // `config` is published origin-free: provenance is a resolution input, not a new external contract.
-  return { findings: resolved, errorCount, warnCount, exitCode, config: publicConfig(effectiveConfig) };
+  return { findings: resolved, errorCount, warnCount, operatorErrorCount, exitCode, config: publicConfig(effectiveConfig), hints: hintsFor(ctx, effectiveConfig) };
+}
+
+/**
+ * The pre-verdict hints: things a reader needs BEFORE the findings in order to read them correctly.
+ *
+ * F-037 / B-07: pointing the gate at a folder of loose skills - no library.json - grades it against the
+ * full askit library ladder, so the author gets a wall of house and Gold requirements for a library they
+ * never claimed to be building, and nothing in the output mentions that `plain-plugin` is the profile
+ * built for exactly this case. The profile is documented in docs/reference/gate-config.md; a reader who
+ * has not read that page has no way to discover it from a failing run.
+ *
+ * Emitted only when NOBODY CHOSE a profile (origin `default`). A grader who passed --profile and a
+ * subject whose own askit.config.json names one have both already answered the question this hint asks,
+ * and repeating it at them would be noise. When a malformed config falls back to defaults the origin IS
+ * `default`, so the hint correctly reappears alongside the operator error.
+ *
+ * `parseError` is checked as well as `data`: a library.json that is PRESENT but malformed is not a plain
+ * plugin, and telling its author "no library.json here" would be false. U1 already reports that case.
+ * Exported for unit testing.
+ */
+export function hintsFor(ctx, config) {
+  const hints = [];
+  const noLibrary = !ctx?.library?.data && !ctx?.library?.parseError;
+  if (noLibrary && config?.profile?.origin === ORIGIN.DEFAULT) {
+    hints.push(
+      "No library.json here, so this is being graded as an askit library against the full ladder - which is why house and Gold requirements appear below. " +
+      "If this is a plain plugin (a folder of skills), grade it as one: add `--profile plain-plugin`, or put `\"profile\": \"plain-plugin\"` in askit.config.json."
+    );
+  }
+  return hints;
+}
+
+/**
+ * The operator block: the findings about the grader's own askit.config.json, printed FIRST and in their
+ * own vocabulary rather than as `[severity/provenance]` conformance lines.
+ *
+ * It leads the output because it is the reader's frame for everything under it: if the rubric did not
+ * load, the grade below was computed against a rubric nobody selected, and a reader who learns that at
+ * the bottom has already misread the top. The "does not affect" sentence is a claim runGate enforces -
+ * operator findings are partitioned out of errorCount, warnCount and the tier - not a reassurance.
+ * Exported for unit testing.
+ */
+export function formatOperatorBlock(findings) {
+  const ops = findings.filter(
+    (f) => isOperatorFinding(f) && !f.suppressed && (f.effectiveSeverity ?? f.severity) !== "off"
+  );
+  if (ops.length === 0) return "";
+  const lines = ops.map(
+    (f) => `  [operator/${f.effectiveSeverity ?? f.severity}] ${f.message}${f.file ? "  -> " + f.file : ""}`
+  );
+  const fatal = ops.some((f) => (f.effectiveSeverity ?? f.severity) === "error");
+  return (
+    "Operator problem - this is YOUR GRADER CONFIGURATION (askit.config.json), not the plugin's content.\n" +
+    "It does not affect the tier, the error count, or the plugin's conformance:\n" +
+    lines.join("\n") +
+    (fatal ? "\n  The rubric did not load: the grade below was computed with DEFAULT configuration." : "")
+  );
 }
 
 /**
@@ -97,6 +168,9 @@ export function sectionFindings(findings, declaredTier) {
   const grading = [];
   const aboveTier = [];
   for (const f of findings) {
+    // An operator finding has no tier to be above or below - it is not a requirement of any rung. It
+    // prints in its own block (formatOperatorBlock), ahead of both of these sections.
+    if (isOperatorFinding(f)) continue;
     if ((f.effectiveSeverity ?? f.severity) === "off" || f.suppressed) continue;
     (TIER_ORDER.indexOf(tierForReq(f.reqId)) <= ceiling ? grading : aboveTier).push(f);
   }
@@ -231,7 +305,19 @@ const ghaEscapeProperty = (s) => ghaEscapeData(s).replace(/:/g, "%3A").replace(/
 export function formatGithubAnnotations(findings, declaredTier) {
   const { grading, aboveTier } = sectionFindings(findings, declaredTier);
   const above = new Set(aboveTier);
-  return [...grading, ...aboveTier]
+  // Operator findings are annotated FIRST and labelled as such. sectionFindings no longer returns them,
+  // so they are prepended explicitly: dropping them here would turn a broken askit.config.json into a
+  // CI run that fails with exit 2 and no annotation on the diff saying why - a silent failure on the one
+  // surface a reviewer actually looks at.
+  const operatorLines = findings
+    .filter((f) => isOperatorFinding(f) && !f.suppressed && (f.effectiveSeverity ?? f.severity) !== "off")
+    .map((f) => {
+      const cmd = (f.effectiveSeverity ?? f.severity) === "error" ? "error" : "warning";
+      const loc = f.file ? ` file=${ghaEscapeProperty(f.file)}` : "";
+      const label = "operator problem (your grader configuration, not the plugin): ";
+      return `::${cmd}${loc}::${ghaEscapeData(label + f.message)}`;
+    });
+  const findingLines = [...grading, ...aboveTier]
     .map((f) => {
       const sev = f.effectiveSeverity ?? f.severity;
       // A finding ABOVE the declared tier is a `::notice`, never an error or a warning, whatever its
@@ -254,8 +340,8 @@ export function formatGithubAnnotations(findings, declaredTier) {
       // built; ghaEscapeData then handles the workflow-command encoding.
       const notice = f.trustNotice ? ` [${f.trustNotice}]` : "";
       return `::${cmd}${paramStr}::${ghaEscapeData(label + f.message + notice)}`;
-    })
-    .join("\n");
+    });
+  return [...operatorLines, ...findingLines].join("\n");
 }
 
 /**
@@ -317,6 +403,13 @@ if (process.argv[1]?.endsWith("check.mjs")) {
   const ctx = loadPlugin(root);
   const r = runGate(root, ctx, { strict, mode, profile });
 
+  // In a machine-readable mode stdout must stay ONE document, so the operator block goes to stderr.
+  // The findings themselves are still in the document (runGate partitions, it does not drop), and
+  // --gha carries its own annotations, so nothing is lost on any surface.
+  if (json || sarif) {
+    const opBlock = formatOperatorBlock(r.findings);
+    if (opBlock) console.error(opBlock);
+  }
   if (json) {
     console.log(JSON.stringify(buildJsonReport(root, ctx, r), null, 2));
   } else if (sarif) {
@@ -325,6 +418,13 @@ if (process.argv[1]?.endsWith("check.mjs")) {
     const out = formatGithubAnnotations(r.findings, ctx?.library?.data?.tier);
     if (out) console.log(out);
   } else {
+    // ORDER (F-011, F-037): operator block, then the pre-verdict hints, then the findings, then the tier
+    // line and the counts. Both leading blocks are the reader's frame for the findings under them, and
+    // both used to be absent entirely - one of them printing after the wall of errors it explains would
+    // be the same defect with extra steps.
+    const opBlock = formatOperatorBlock(r.findings);
+    if (opBlock) console.log(opBlock + "\n");
+    for (const h of r.hints ?? []) console.log(h + "\n");
     if (r.findings.length) {
       const out = format(r.findings, ctx?.library?.data?.tier);
       if (out) console.log(out);

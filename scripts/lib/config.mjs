@@ -17,6 +17,20 @@ const SEVERITIES = new Set(["error", "warn", "off"]);
 const MODES = new Set(["local", "published-verdict"]);
 
 /**
+ * Every finding this module emits is an OPERATOR finding: it is about `askit.config.json`, the
+ * grader's own rubric file, and not about the plugin under test. See `isOperatorFinding` in
+ * findings.mjs for what the flag does and the defect it closes (F-011).
+ *
+ * ALL of them are stamped, warnings included. Half-labelling would leave
+ * `unknown profile 'nope'` reading as a warning about the plugin, which is the same falsehood one
+ * severity quieter.
+ */
+const operatorFinding = (severity, message) => ({
+  ...finding("config", severity, message, { file: CONFIG_FILENAME, reqId: null }),
+  operator: true,
+});
+
+/**
  * CONFIG PROVENANCE (ADR 0044, W1a). Every resolved setting carries who chose it, because the
  * published-verdict trust step has to distinguish a rubric the GRADER selected from one the SUBJECT
  * wrote about itself, and by the time the resolver ran those were indistinguishable: check.mjs and
@@ -53,7 +67,7 @@ function severityOf(v) {
 }
 
 function normalize(data, findings) {
-  const push = (msg) => findings.push(finding("config", SEVERITY.WARN, msg, { file: CONFIG_FILENAME, reqId: null }));
+  const push = (msg) => findings.push(operatorFinding(SEVERITY.WARN, msg));
 
   // A rejected value keeps the DEFAULT's origin, not the subject's: the subject wrote something, but it
   // is not the value in force, and stamping it `subject` would let a malformed config claim ownership of
@@ -114,12 +128,12 @@ export function loadConfig(root) {
   const { data, parseError } = readJsonSafe(p);
   const findings = [];
   if (parseError) {
-    findings.push(finding("config", SEVERITY.ERROR, `${CONFIG_FILENAME} is present but not valid JSON: ${parseError}. Falling back to defaults.`, { file: CONFIG_FILENAME, reqId: null }));
+    findings.push(operatorFinding(SEVERITY.ERROR, `${CONFIG_FILENAME} is present but not valid JSON: ${parseError}. Falling back to defaults.`));
     return { config: DEFAULT_CONFIG, findings };
   }
   if (data === null) return { config: DEFAULT_CONFIG, findings }; // absent => no-op default
   if (typeof data !== "object" || Array.isArray(data)) {
-    findings.push(finding("config", SEVERITY.ERROR, `${CONFIG_FILENAME} must be a JSON object. Falling back to defaults.`, { file: CONFIG_FILENAME, reqId: null }));
+    findings.push(operatorFinding(SEVERITY.ERROR, `${CONFIG_FILENAME} must be a JSON object. Falling back to defaults.`));
     return { config: DEFAULT_CONFIG, findings };
   }
   return { config: normalize(data, findings), findings };
