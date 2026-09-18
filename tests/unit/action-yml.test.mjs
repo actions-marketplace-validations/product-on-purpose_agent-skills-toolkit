@@ -57,7 +57,7 @@ test("action.yml declares the minimum required inputs: path, profile, fail-on-er
 
 test("action.yml declares the required outputs: earned tier plus error and warning counts", () => {
   const action = loadAction();
-  for (const name of ["tier", "errors", "warnings", "sarif-path"]) {
+  for (const name of ["tier", "errors", "warnings", "operator-errors", "sarif-path"]) {
     assert.ok(action.outputs[name], `missing output "${name}"`);
   }
 });

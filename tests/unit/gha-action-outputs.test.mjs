@@ -18,9 +18,9 @@ const SILVER_FIXTURE = path.join(ROOT, "tests", "fixtures", "golden", "silver-fi
 
 // --- toGithubOutputLines: the pure function, given an already-built report object ---
 
-test("toGithubOutputLines projects tier/errorCount/warnCount into GITHUB_OUTPUT-format lines", () => {
-  const lines = toGithubOutputLines({ tierReport: { tier: "advanced" }, errorCount: 0, warnCount: 2, exitCode: 0 });
-  assert.deepEqual(lines, ["tier=advanced", "errors=0", "warnings=2"]);
+test("toGithubOutputLines projects tier/errorCount/warnCount/operatorErrorCount into GITHUB_OUTPUT-format lines", () => {
+  const lines = toGithubOutputLines({ tierReport: { tier: "advanced" }, errorCount: 0, warnCount: 2, exitCode: 0, operatorErrorCount: 0 });
+  assert.deepEqual(lines, ["tier=advanced", "errors=0", "warnings=2", "operator-errors=0"]);
 });
 
 // Finding 2 (pre-release adversarial review, v1.11.0): the bridge must FAIL CLOSED, never substitute a
@@ -30,7 +30,7 @@ test("toGithubOutputLines projects tier/errorCount/warnCount into GITHUB_OUTPUT-
 // behavior this finding requires removing.
 
 test("toGithubOutputLines throws (does not default to tier=none) when tierReport is absent", () => {
-  assert.throws(() => toGithubOutputLines({ errorCount: 1, warnCount: 0, exitCode: 1 }), /tierReport\.tier/);
+  assert.throws(() => toGithubOutputLines({ errorCount: 1, warnCount: 0, exitCode: 1, operatorErrorCount: 0 }), /tierReport\.tier/);
 });
 
 test("toGithubOutputLines throws naming every missing/invalid field when the report is empty", () => {
@@ -45,52 +45,72 @@ test("toGithubOutputLines throws naming every missing/invalid field when the rep
 
 test("toGithubOutputLines throws on an out-of-domain tier value rather than passing it through", () => {
   assert.throws(
-    () => toGithubOutputLines({ tierReport: { tier: "gold" }, errorCount: 0, warnCount: 0, exitCode: 0 }),
+    () => toGithubOutputLines({ tierReport: { tier: "gold" }, errorCount: 0, warnCount: 0, exitCode: 0, operatorErrorCount: 0 }),
     /tierReport\.tier/
   );
 });
 
 test("toGithubOutputLines throws on a non-integer or negative errorCount/warnCount", () => {
   assert.throws(
-    () => toGithubOutputLines({ tierReport: { tier: "none" }, errorCount: "0", warnCount: 0, exitCode: 0 }),
+    () => toGithubOutputLines({ tierReport: { tier: "none" }, errorCount: "0", warnCount: 0, exitCode: 0, operatorErrorCount: 0 }),
     /errorCount/
   );
   assert.throws(
-    () => toGithubOutputLines({ tierReport: { tier: "none" }, errorCount: 0, warnCount: -1, exitCode: 0 }),
+    () => toGithubOutputLines({ tierReport: { tier: "none" }, errorCount: 0, warnCount: -1, exitCode: 0, operatorErrorCount: 0 }),
     /warnCount/
   );
 });
 
-test("toGithubOutputLines throws on an exitCode outside {0, 1}", () => {
+// REWRITTEN, not forced green. This test asserted that exitCode 2 is rejected, which became an
+// assertion of a defect the moment check.mjs started returning 2 for an askit.config.json that does not
+// load (F-011, the grader config drags the tier down). Rejecting it failed the Action's outputs step
+// with "exitCode: expected 0 or 1, got 2" and left every output unset. 2 is now in the domain; the
+// test's real job - that an out-of-domain or absent exitCode is refused rather than defaulted - is kept.
+test("toGithubOutputLines accepts exitCode 2 (an operator error) and throws on anything outside {0, 1, 2}", () => {
+  assert.deepEqual(
+    toGithubOutputLines({ tierReport: { tier: "universal" }, errorCount: 0, warnCount: 1, exitCode: 2, operatorErrorCount: 1 }),
+    ["tier=universal", "errors=0", "warnings=1", "operator-errors=1"],
+    "a plugin whose GRADE is clean but whose rubric did not load still projects its grade"
+  );
   assert.throws(
-    () => toGithubOutputLines({ tierReport: { tier: "none" }, errorCount: 0, warnCount: 0, exitCode: 2 }),
+    () => toGithubOutputLines({ tierReport: { tier: "none" }, errorCount: 0, warnCount: 0, exitCode: 3, operatorErrorCount: 0 }),
     /exitCode/
   );
   assert.throws(
-    () => toGithubOutputLines({ tierReport: { tier: "none" }, errorCount: 0, warnCount: 0 }),
+    () => toGithubOutputLines({ tierReport: { tier: "none" }, errorCount: 0, warnCount: 0, operatorErrorCount: 0 }),
     /exitCode/
   );
 });
 
+test("toGithubOutputLines refuses a report with no operatorErrorCount rather than defaulting it to 0", () => {
+  // The same fail-closed rule the other counts get. Defaulting would report "operator-errors=0" for a
+  // report this file could not actually read that field from - a green answer derived from absence,
+  // which is the failure mode this module exists to refuse.
+  assert.throws(
+    () => toGithubOutputLines({ tierReport: { tier: "advanced" }, errorCount: 0, warnCount: 0, exitCode: 0 }),
+    /operatorErrorCount/
+  );
+});
+
 test("toGithubOutputLines accepts a fully valid report and never substitutes a default", () => {
-  const lines = toGithubOutputLines({ tierReport: { tier: "advanced" }, errorCount: 0, warnCount: 0, exitCode: 0 });
-  assert.deepEqual(lines, ["tier=advanced", "errors=0", "warnings=0"]);
+  const lines = toGithubOutputLines({ tierReport: { tier: "advanced" }, errorCount: 0, warnCount: 0, exitCode: 0, operatorErrorCount: 0 });
+  assert.deepEqual(lines, ["tier=advanced", "errors=0", "warnings=0", "operator-errors=0"]);
 });
 
 // --- validateReport: the underlying schema check, exercised directly ---
 
 test("validateReport returns an empty array for a fully valid report", () => {
-  assert.deepEqual(validateReport({ tierReport: { tier: "universal" }, errorCount: 0, warnCount: 0, exitCode: 0 }), []);
+  assert.deepEqual(validateReport({ tierReport: { tier: "universal" }, errorCount: 0, warnCount: 0, exitCode: 0, operatorErrorCount: 0 }), []);
 });
 
 test("validateReport returns one problem per missing/invalid field, not just the first", () => {
   const problems = validateReport({});
-  assert.equal(problems.length, 4, `expected 4 problems (tier, errorCount, warnCount, exitCode), got:\n${problems.join("\n")}`);
+  assert.equal(problems.length, 5, `expected 5 problems (tier, errorCount, warnCount, exitCode, operatorErrorCount), got:\n${problems.join("\n")}`);
 });
 
 // --- CLI: reads a real check.mjs --json file and emits the three lines ---
 
-test("CLI gha-action-outputs.mjs reads a check.mjs --json file and prints tier/errors/warnings lines", () => {
+test("CLI gha-action-outputs.mjs reads a check.mjs --json file and prints tier/errors/warnings/operator-errors lines", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "askit-gha-out-"));
   try {
     const reportFile = path.join(dir, "gate.json");
@@ -98,10 +118,11 @@ test("CLI gha-action-outputs.mjs reads a check.mjs --json file and prints tier/e
     writeFileSync(reportFile, gateJson, "utf8");
     const out = execFileSync(process.execPath, [SCRIPT, reportFile], { encoding: "utf8" });
     const lines = out.trim().split("\n");
-    assert.equal(lines.length, 3);
+    assert.equal(lines.length, 4);
     assert.match(lines[0], /^tier=convergent$/);
     assert.match(lines[1], /^errors=\d+$/);
     assert.match(lines[2], /^warnings=\d+$/);
+    assert.match(lines[3], /^operator-errors=0$/, "this fixture carries no askit.config.json, so nothing is wrong with the RUN");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

@@ -40,6 +40,7 @@ Stated precisely, because the two CLIs report differently and one of them is not
 | `evaluate.mjs` tier and exit code | excluded; the finding is printed with an `[operator/...]` label |
 | `evaluate.mjs` `summary.errors` and `dispositions.realIssues` | **still counted**, so an unloadable config adds 1 to both. Tracked as a follow-up: separating it needs a sixth disposition bucket, and the five are a documented partition that consumers sum (ADR 0044). |
 | `--sarif` | emitted as an ordinary result at level `error` with `ruleId: "config"`, unlabelled. Also a follow-up. |
+| The GitHub Action | reported as its own `operator-errors` output, separate from `errors`, and annotated on the diff. See [run the gate in GitHub Actions](../how-to/run-the-gate-in-github-actions.md). |
 
 - **`mode`** (default `"local"`): `"local"` or `"published-verdict"`. See [Published-verdict mode](#published-verdict-mode).
 - **`profile`** (default `"askit-library"`): a named profile. See [Profiles](#profiles).

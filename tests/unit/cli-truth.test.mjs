@@ -265,6 +265,40 @@ test("F-011: evaluate.mjs labels the operator finding instead of listing it as a
   });
 });
 
+// --- F-011, the third surface: the published GitHub Action ----------------------------------------
+
+test("F-011: the Action's own pipeline survives a broken rubric and reports it as its own output", () => {
+  withMinimalPlugin((dir) => {
+    writeFileSync(path.join(dir, CONFIG_FILENAME), BROKEN_JSON);
+    const reportFile = path.join(dir, "gate.json");
+
+    // action.yml's exact sequence: check.mjs --json into a file under exit-code capture, then the
+    // outputs bridge, then the SARIF guard with both exit codes.
+    const gate = runCliScript("scripts/check.mjs", [dir, "--json"]);
+    assert.equal(gate.code, 2);
+    writeFileSync(reportFile, gate.stdout, "utf8");
+
+    // The bridge validates fail-closed and USED to reject exit 2 outright ("exitCode: expected 0 or 1,
+    // got 2"). Under action.yml that line runs with `set -e`, so the step died there, leaving tier,
+    // errors, warnings and sarif-path unset for the rest of the job and printing a message that reads
+    // as a toolkit bug rather than "your askit.config.json does not parse".
+    const bridge = runCliScript("scripts/gha-action-outputs.mjs", [reportFile]);
+    assert.equal(bridge.code, 0, `the outputs bridge must not reject an operator exit: ${bridge.stderr}`);
+    const lines = bridge.stdout.trim().split("\n");
+    assert.deepEqual(lines, ["tier=universal", "errors=0", "warnings=1", "operator-errors=1"]);
+
+    // `errors=0` is true and `operator-errors=1` is what stops it being a false pass: a workflow running
+    // with fail-on-error: false reads both, and folding them into one number would put back the exact
+    // falsehood this effort removed, in the one place a machine reads it.
+    const sarif = runCliScript("scripts/check.mjs", [dir, "--sarif"]);
+    assert.equal(sarif.code, 2, "both check.mjs invocations compute the identical runGate exit code");
+    const sarifFile = path.join(dir, "gate.sarif");
+    writeFileSync(sarifFile, sarif.stdout, "utf8");
+    const guard = runCliScript("scripts/gha-sarif-guard.mjs", [sarifFile, "2", "2"]);
+    assert.equal(guard.code, 0, `the SARIF guard must accept the operator exit on both sides: ${guard.stderr}`);
+  });
+});
+
 test("F-037: the repository's own gate output is untouched by the hint", () => {
   assert.deepEqual(runGate(ROOT).hints, [], "this toolkit carries a library.json, so nothing changes here");
 });
