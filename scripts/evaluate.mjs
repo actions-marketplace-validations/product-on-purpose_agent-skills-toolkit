@@ -231,16 +231,44 @@ function targetHasEnumeratingManifest(target) {
   return false;
 }
 
-// Builds the set of reqIds that should render N/A (not PASS) when no findings are present.
-// The base set covers checks whose artifacts are always optional (G1 hooks, G6 deprecation,
-// U11 managed-connector). U12 and U13 are added dynamically based on target content so a
-// plugin that actually has diagrams or an enumerating manifest never silently shows N/A.
+// Returns true when library.json declares at least one component entry, which is the precondition
+// G6 (deprecation) early-returns on: `if (!lib || typeof lib.components !== "object" ...) return []`
+// (checks/deprecation.mjs). Deliberately NOT "a deprecated entry exists": G6 validates the `status`
+// of EVERY entry, so an all-active plugin has had its statuses read and passed.
+function targetHasComponentEntries(target) {
+  const components = readJsonSafe(path.join(target, "library.json")).data?.components;
+  if (!components || typeof components !== "object" || Array.isArray(components)) return false;
+  return Object.values(components).some((list) => Array.isArray(list) && list.length > 0);
+}
+
+// Builds the set of reqIds that render N/A (not PASS) when no findings are present.
+//
+// N/A means exactly one thing: the check's own precondition was not met, so it returned before
+// examining anything. Every entry is therefore derived from the subject, against the SAME condition
+// the check module early-returns on - named per line below so the report and the check cannot drift.
+//
+// This replaces a FIXED base set of G1, G6 and U11 "whose artifacts are always optional", which was
+// F-007 of the 2026-09-04 audit: those three were N/A on every subject, including one that has the
+// artifact. This repository ships hooks/hooks.json and declares 35 components, and its own report
+// read `G1 hook-documentation | N/A | Nothing to validate for this subject (vacuous pass).` for a
+// hook G1 had examined and passed - while docs/explanation/validation-and-improvement.md said the
+// Gold checks "grade real artifacts (a real hook, ...), not empty placeholders". Both could not be
+// true. Reproduced and guarded in tests/unit/evaluate-conditional.test.mjs.
 export function buildConditional(target) {
-  const base = new Set(["G1", "G6", "U11"]);
-  if (!target) return base;
-  if (!targetHasMermaidBlocks(target)) base.add("U12");
-  if (!targetHasEnumeratingManifest(target)) base.add("U13");
-  return base;
+  // No subject: no precondition can be evaluated, so nothing may be reported as examined.
+  if (!target) return new Set(["U11", "U12", "U13", "G1", "G6"]);
+  const conditional = new Set();
+  // U11 (mcp-valid): "Conditional: no .mcp.json => not applicable" - the module's own docblock.
+  if (!existsSync(path.join(target, ".mcp.json"))) conditional.add("U11");
+  // U12 (mermaid-valid): no fenced mermaid block anywhere, so there is no diagram to parse.
+  if (!targetHasMermaidBlocks(target)) conditional.add("U12");
+  // U13 (skill-registration): no enumerating manifest, so there is nothing to reconcile against disk.
+  if (!targetHasEnumeratingManifest(target)) conditional.add("U13");
+  // G1 (hook-documentation): `if (!isFile(hooksPath)) return []` - checks/hook-documentation.mjs.
+  if (!existsSync(path.join(target, "hooks", "hooks.json"))) conditional.add("G1");
+  // G6 (deprecation): no component entry carries a `status` for it to read.
+  if (!targetHasComponentEntries(target)) conditional.add("G6");
+  return conditional;
 }
 
 // The options bag the pure renderer needs that is not on the bare report object: the subject identity,

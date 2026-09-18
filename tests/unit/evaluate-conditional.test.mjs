@@ -7,7 +7,8 @@ import { evaluate } from "../../scripts/evaluate.mjs";
 import { renderMarkdown } from "../../scripts/lib/report-render.mjs";
 import { CHECKS } from "../../scripts/lib/registry.mjs";
 import { gateExitFromFindings } from "../../scripts/check.mjs";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 const FIXTURES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../fixtures");
 const MINIMAL = path.join(FIXTURES, "golden/minimal-skill");       // no diagrams, no enumerating manifest
@@ -79,4 +80,91 @@ test("evaluate + render: U13 renders PASS (not N/A) for silver-fixture which has
   const u13Line = md.split("\n").find((l) => l.includes("U13") && l.includes("|"));
   assert.ok(u13Line, "U13 row must appear in the report table");
   assert.ok(!u13Line.includes("N/A"), "U13 must not render N/A when enumerating manifest exists");
+});
+
+// --- F-007: N/A must mean "the check's precondition was not met", never "the check ran and passed" ---
+//
+// The 2026-09-04 audit's F-007: buildConditional carried a FIXED base set of G1, G6 and U11, so this
+// repository - which ships hooks/hooks.json and declares 35 components - rendered
+// `G1 hook-documentation | N/A | Nothing to validate for this subject (vacuous pass).` for a hook that
+// G1 had examined and passed. Each assertion below names the early return in the check module that IS
+// the precondition, so the report and the check cannot drift apart again.
+
+/** A throwaway plugin root; `files` maps a relative path to its contents. */
+function tempPlugin(files) {
+  const dir = mkdtempSync(path.join(tmpdir(), "askit-cond-"));
+  for (const [rel, body] of Object.entries(files)) {
+    const full = path.join(dir, rel);
+    mkdirSync(path.dirname(full), { recursive: true });
+    writeFileSync(full, body);
+  }
+  return dir;
+}
+
+const LIB_NO_COMPONENTS = JSON.stringify({ name: "t", version: "1.0.0", description: "d", standard: "0.16", tier: "universal" });
+const LIB_WITH_COMPONENTS = JSON.stringify({
+  name: "t", version: "1.0.0", description: "d", standard: "0.16", tier: "universal",
+  components: { skills: [{ name: "t-one", path: "skills/t-one/SKILL.md", version: "1.0.0", tier: "universal", status: "active" }] },
+});
+const HOOKS_JSON = JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: "command", command: "true" }] }] } });
+const MCP_JSON = JSON.stringify({ mcpServers: { demo: { command: "node", args: ["server.mjs"] } } });
+
+// G1 (hook-documentation): the precondition is `if (!isFile(hooksPath)) return []` - checks/hook-documentation.mjs.
+test("buildConditional: includes G1 when the subject ships no hooks/hooks.json", () => {
+  const dir = tempPlugin({ "library.json": LIB_NO_COMPONENTS });
+  try {
+    assert.ok(buildConditional(dir).has("G1"), "G1 is N/A only when there is no hooks.json");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("buildConditional: does NOT include G1 when the subject ships hooks/hooks.json", () => {
+  const dir = tempPlugin({ "library.json": LIB_NO_COMPONENTS, "hooks/hooks.json": HOOKS_JSON });
+  try {
+    assert.ok(!buildConditional(dir).has("G1"), "a hook G1 examined and passed must not report as 'nothing to validate'");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// U11 (mcp-valid): the module's own docblock states the precondition - "Conditional: no .mcp.json => not applicable".
+test("buildConditional: includes U11 when the subject ships no .mcp.json", () => {
+  const dir = tempPlugin({ "library.json": LIB_NO_COMPONENTS });
+  try {
+    assert.ok(buildConditional(dir).has("U11"), "U11 is N/A only when there is no .mcp.json");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("buildConditional: does NOT include U11 when the subject ships .mcp.json", () => {
+  const dir = tempPlugin({ "library.json": LIB_NO_COMPONENTS, ".mcp.json": MCP_JSON });
+  try {
+    assert.ok(!buildConditional(dir).has("U11"), "a .mcp.json U11 parsed and validated must not report as 'nothing to validate'");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// G6 (deprecation): the precondition is the MISSING components map (checks/deprecation.mjs:21), never
+// "no deprecated entry". G6 validates the `status` of EVERY entry, so an all-active plugin has had its
+// statuses examined; keying N/A on "no deprecated component" would reproduce F-007 one check over.
+test("buildConditional: includes G6 when library.json declares no component entries", () => {
+  const dir = tempPlugin({ "library.json": LIB_NO_COMPONENTS });
+  try {
+    assert.ok(buildConditional(dir).has("G6"), "G6 is N/A only when there are no component entries to read a status from");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("buildConditional: does NOT include G6 when every component entry is status active", () => {
+  const dir = tempPlugin({ "library.json": LIB_WITH_COMPONENTS });
+  try {
+    assert.ok(!buildConditional(dir).has("G6"), "G6 examined an active entry's status; that is a pass, not a vacuous pass");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// End-to-end on the audit's own reproduction target: this repository ships hooks/hooks.json and 35
+// declared components, so neither G1 nor G6 may render N/A in its own report.
+test("evaluate + render: this repository renders G1 and G6 as examined, not N/A", () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+  const r = evaluate(root);
+  const md = renderMarkdown(r, optsFor(r, root));
+  for (const reqId of ["G1", "G6"]) {
+    const row = md.split("\n").find((l) => l.startsWith(`| ${reqId} `));
+    assert.ok(row, `${reqId} row must appear in the report table`);
+    assert.ok(!row.includes("N/A"), `${reqId} must not render N/A on a subject that has the artifact it grades: ${row}`);
+  }
 });

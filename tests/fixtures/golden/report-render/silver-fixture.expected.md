@@ -24,7 +24,7 @@
 
 **Summary: a derived, plain-language read of the deterministic result. silver-fixture earns Silver.**
 
-silver-fixture declares the Silver (Convergent) tier and earns Silver. Of the 35 checks in the spine, 32 do not fail (27 pass, 1 warn, 4 not applicable) and 3 fail. The deterministic gate exits 0.
+silver-fixture declares the Silver (Convergent) tier and earns Silver. Of the 35 checks in the spine, 32 do not fail (28 pass, 1 warn, 3 not applicable) and 3 fail. The deterministic gate exits 0.
 
 3 requirement(s) block Gold: G2, G5, G4. Section 06 orders the climb and section 07 gives a copy-paste fix prompt for each gap that drives the matching askit builder and re-runs the gate.
 
@@ -60,7 +60,7 @@ Layer 1, deterministic conformance, decides the tier. The portable Node gate run
 | WARN | Advisory finding; does not block the declared tier. |
 | N/A | Vacuous pass; the thing being checked does not exist in this subject. |
 
-Vacuous passes here: U12, U11, G6, G1. A vacuous pass means there was nothing to validate, not that a feature was exercised.
+Vacuous passes here: U12, U11, G1. A vacuous pass means there was nothing to validate, not that a feature was exercised.
 
 ## 05 Tier compliance - evidence ledger
 
@@ -106,7 +106,7 @@ Vacuous passes here: U12, U11, G6, G1. A vacuous pass means there was nothing to
 | Req | Status | Provenance | Evidence |
 | --- | --- | --- | --- |
 | G3 library-regression | PASS | - | Requirement satisfied; no finding raised. Module: checks/library-regression.mjs. |
-| G6 deprecation | N/A | - | Nothing to validate for this subject (vacuous pass). Module: checks/deprecation.mjs. |
+| G6 deprecation | PASS | - | Requirement satisfied; no finding raised. Module: checks/deprecation.mjs. |
 | G1 hook-documentation | N/A | - | Nothing to validate for this subject (vacuous pass). Module: checks/hook-documentation.mjs. |
 | G2 self-hosting | FAIL | house | no CI workflow under .github/workflows/; Gold requires self-hosting CI that runs the conformance gate (Standard sec 2.6 G2, sec 4). Module: checks/self-hosting.mjs. |
 | G5 release-notes | FAIL | house | RELEASE-NOTES.md is missing at the repository root; Gold requires a curated, user-facing RELEASE-NOTES.md distinct from CHANGELOG.md (Standard sec 2.6 G5, sec 10.6). Module: checks/release-notes.mjs. |
@@ -214,7 +214,7 @@ Run `askit-evaluate` in review mode to populate this section; a conformance repo
 | Evaluator | askit-evaluate (deterministic gate, renderer) |
 | Gate exit code | 0 |
 | Evaluated | 2026-01-01 |
-| Checks | 27 PASS, 3 FAIL, 1 WARN, 4 N/A |
+| Checks | 28 PASS, 3 FAIL, 1 WARN, 3 N/A |
 
 ## 11 Per-check glossary
 
