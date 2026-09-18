@@ -103,9 +103,11 @@ ADR that does not exist yet** - the next free ADR number is **0062**.
 **Annotated 2026-09-17.** The suite at `ab0dc20` is **1588 tests, 0 failures**. Criterion 4's budget
 cannot be set from a single baseline run on this workstation: three consecutive `npm test` runs
 reported `duration_ms` of **49.8 s, 59.6 s and 62.3 s**, a 12.5 s spread, where fifteen percent of the
-fastest is 7.5 s. **The run-to-run noise is larger than the budget it would be judged against**, so
-whoever does this work has to establish the baseline as a repeated median on the machine that judges
-it, and measure the corpus's cost the same way.
+fastest is 7.5 s. **Two later three-run samples on this same machine did NOT reproduce that spread**
+(67.4 / 72.8 / 74.9 s, and 55.5 / 61.2 / 62.5 s - both spreads under the budget), so no general claim
+about noise exceeding the budget is made here: three samples disagree and the honest reading is that a
+single run cannot set this threshold either way. Whoever does this work has to establish the baseline
+as a repeated median on the machine that judges it, and measure the corpus's cost the same way.
 This item also absorbs the 2026-09-04 audit's companion finding that *six checks hang on one test
 each* - that is the same gap counted from the other end.
 
