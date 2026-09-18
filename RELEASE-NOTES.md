@@ -4,6 +4,46 @@ Curated, user-facing highlights. For the full technical history see [`CHANGELOG.
 
 Every tier named below carries the same scope. *This tier reports structural conformance to a written Standard - deterministic and reproducible; it is not a content review, a safety audit, or a statement that the skills work.* See [what a tier does not certify](docs/explanation/limitations.md). This note is deliberately in the STANDING header rather than a footer: a footer would sit inside the oldest release's section and be extracted into that release's body by `check-release-notes-section.mjs`.
 
+## 1.19.0 - 2026-09-17
+
+[![npm](https://img.shields.io/npm/v/agent-skills-toolkit?label=npm&color=cb3837)](https://www.npmjs.com/package/agent-skills-toolkit)
+[![tier](https://img.shields.io/endpoint?url=https://product-on-purpose.github.io/agent-skills-toolkit/badges/tier.json)](https://product-on-purpose.github.io/agent-skills-toolkit/reports/report.html)
+[![checks](https://img.shields.io/badge/checks-35-6b4fa8)](https://product-on-purpose.github.io/agent-skills-toolkit/reference/gold-checks/)
+[![standard](https://img.shields.io/badge/Standard-0.16-6b4fa8)](https://product-on-purpose.github.io/agent-skills-toolkit/explanation/conformance-and-tiers/)
+
+**Current with the vendors.** Every headline item shares one shape: this toolkit was asserting something about Claude Code or Codex that the vendor had stopped doing. Nothing here changes your grade unless you choose to raise your own Standard pin.
+
+### You need to do nothing
+
+All three Standard 0.16 spine changes are **warn-first** and carry a migration window to Standard 0.17. A plugin pinned at 0.15 or 0.16 sees no new gate failure. The windows close at 0.17, which is the next Standard revision.
+
+### New: a check for a component that disappears without a trace (`U18`)
+
+If your plugin declares `codex` as a target, Codex does not run your `commands/*.md` as commands - it converts them into skills, once. **A command whose converted skill is over 4000 bytes is skipped entirely.** No file is written, no error is raised, and the command simply does not exist on Codex. Your plugin still installs and the gate still passed, so the first sign of trouble is a user asking why a command does nothing.
+
+Every other thing this gate checks is visible to an author who looks. This one is an absence, and an absence has no symptom. `U18` now warns on it.
+
+**It is a `warn`, not an error, and that is deliberate.** The vendor caps the *converted* skill; this check measures the *source file*. Reproducing the vendor's converter would mean re-implementing a private function in a Rust crate that cannot be pinned and would drift silently. A warn says "at risk, go and check". An error would assert a fact about output the check never measured.
+
+### Tightened: two checks that could be satisfied without the thing being true
+
+- **`G1`** now reports a hook whose handler type Codex parses and then silently ignores. A hook that never runs used to pass.
+- **`G2`** now credits CI that actually **executes** the gate, not CI that merely mentions it.
+
+### Fixed: eight bugs from an external audit
+
+Including two regular expressions that could hang the gate indefinitely, a symlink escape that made the gate walk the host filesystem, a 64 KB truncation of piped machine-readable output, a silently dropped CLI flag, and a byte-order mark that dropped an otherwise valid plugin to `Tier: None`.
+
+**`U6`** also stopped reporting a false broken link: a root-relative web path was being resolved against the containing file. The accepted cost is stated rather than buried - `U6` no longer reports a dangling root-relative *repository* path, because making it guess which of two path vocabularies a repository speaks is how a check publishes a false finding about somebody else's tree.
+
+### The vendor records caught up
+
+The Codex record was 20 days stale in three ways at once - the page had moved host, the hook event count had grown from eleven to twelve, and the Standard still listed ten. The Claude Code record was 26 versions behind. And two pinned sentences on the Claude Code plugins reference had been reworded while `STANDARD.md` was still quoting one of them under the word *verbatim*.
+
+### Verification
+
+Suite **1575 tests, 1571 pass, 0 failures, 4 skipped**. Gate **Advanced, 0 errors, 0 warnings**. `release-ready` **six gates green**. Every check change was graded against all six reference-family plugins before and after: **no verdict, error count or exit code moved anywhere.**
+
 ## 1.18.0 - 2026-09-03
 
 [![npm](https://img.shields.io/npm/v/agent-skills-toolkit?label=npm&color=cb3837)](https://www.npmjs.com/package/agent-skills-toolkit)
