@@ -65,19 +65,33 @@ test("a Claude-only plugin with a large command stays clean", () => {
   assert.equal(warns(ctxWith(["claude"], [{ name: "big", bytes: 40000 }])).length, 0);
 });
 
-test("the finding carries the 0.17 cap, not a bare since", () => {
-  // `since` alone gates the moment a consumer adopts 0.16, giving a plugin that adopts the revision no
-  // migration window at all. Both constraints are required; this pins the one that is easy to drop.
+/**
+ * REWRITTEN, NOT DELETED. The two tests that stood here asserted the PRESENCE of the defect.
+ *
+ * They read `assert.equal(f.migration.until, "0.17")` and `assert.match(f.migration.reason, /gates at
+ * 0\.17/)` - pinning a graduation that could not occur, because this check emits `SEVERITY.WARN`
+ * natively and the cap was also `warn`. Capping a warn at warn is a no-op. v1.19.0 shipped that false
+ * claim, and these tests are the reason nothing caught it: they proved the metadata SAID it, never that
+ * the severity MOVED.
+ *
+ * Forcing them green would have kept the confusion. They now assert the ruling instead.
+ */
+test("U18 carries NO migration: it is permanently warn and does not graduate", () => {
   const f = warns(ctxWith(["codex"], [{ name: "big", bytes: 5000 }]))[0];
-  assert.equal(f.migration.capAt, "warn");
-  assert.equal(f.migration.until, "0.17");
+  // The finding factory normalises an absent migration to null rather than leaving it undefined, so
+  // this asserts ABSENCE rather than a specific empty value - the shape is the factory's business.
+  assert.ok(
+    !f.migration,
+    "a warn capped at warn is a no-op; attaching one advertises a graduation that cannot happen"
+  );
+  assert.equal(f.severity, "warn", "ADR 0058 made this warn on purpose - the measurement is a declared proxy");
 });
 
-test("the migration reason is ACTIVATION-NEUTRAL: it never claims a cap is in force", () => {
-  // Under --strict the pin is undefined, nothing binds, and this static text is still visible in --json.
-  const f = warns(ctxWith(["codex"], [{ name: "big", bytes: 5000 }]))[0];
-  assert.doesNotMatch(f.migration.reason, /currently|is capped|until you pin/i);
-  assert.match(f.migration.reason, /introduced at Standard 0\.16 and gates at 0\.17/);
+test("U18 keeps its since, which does a different job from a cap", () => {
+  // `since` is not a migration window. It stops the check reaching a plugin pinned below the revision
+  // that introduced it, which is real and still necessary. Dropping it while dropping the cap would
+  // expose every plugin pinned under 0.16 to a check that did not exist at its pin.
+  assert.equal(meta.since, "0.16");
 });
 
 test("the message states SKIPPED, never truncated", () => {
