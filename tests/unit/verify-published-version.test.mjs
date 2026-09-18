@@ -16,8 +16,7 @@ import {
 
 // The post-publish registry assertion. Everything else in publish-npm.yml certifies what is ABOUT to be
 // published; the only evidence that a release actually LANDED was `npm publish` exiting 0, which comes
-// from inside the thing it certifies. v1.16.2 and v1.16.3 were tagged and GitHub-released on 2026-08-25
-// and never reached npm, and three days later every automated signal in this repository was still green.
+// from inside the thing it certifies.
 //
 // Tested without a network: `assessPackument` is pure, and `verifyPublishedVersion` takes its fetch and
 // its sleep as parameters, so the retry loop is exercised in microseconds rather than half a minute.

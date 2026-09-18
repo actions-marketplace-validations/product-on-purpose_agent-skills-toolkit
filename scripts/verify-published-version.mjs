@@ -3,13 +3,10 @@
 // what-it-does: asks the npm registry whether the version this tag names is actually THERE, after the
 //               publish step claims to have put it there, and fails the run when it is not
 // why:          `npm publish` exiting 0 was the only evidence this repository had that a release
-//               reached the registry, and that evidence comes from INSIDE the thing it certifies.
-//               v1.16.2 and v1.16.3 were tagged and GitHub-released on 2026-08-25 and never reached
-//               npm; three days later `latest` still served 1.16.1, two fixes to the reusable Action
-//               had not reached the consumers they were written for, and every automated signal was
-//               green - because nothing ever asked the registry. publish-npm.yml's own docblock names
-//               a forgotten publish as a SILENT failure and trades it for a visible one; this closes
-//               the other half, a publish that was not forgotten and still did not land
+//               reached the registry, and that evidence comes from INSIDE the thing it certifies -
+//               nothing here ever asked the registry. publish-npm.yml's own docblock names a forgotten
+//               publish as a SILENT failure and trades it for a visible one; this closes the other
+//               half, a publish that was not forgotten and still did not land
 // used-by:      .github/workflows/publish-npm.yml, the "Verify the registry actually has this version"
 //               step in the `publish` job; covered by tests/unit/verify-published-version.test.mjs
 //

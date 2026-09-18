@@ -6,9 +6,10 @@
 # GitHub release. The toolkit is installed from the product-on-purpose marketplace by
 # cloning the pinned commit, so no archive artifact is built here.
 #
-# Per Standard sec 4.1/4.4, this workflow holds no validation logic of its own beyond
-# the guard: the gate is the same portable `node scripts/check.mjs` a contributor runs
-# locally. The PR-time validate + build-site jobs live in ci.yml and are unchanged.
+# Per Standard sec 4.1/4.4, this workflow holds no validation logic of its own: the gate
+# is the same portable `node scripts/check.mjs` a contributor runs locally, and the
+# version-consistency guard is scripts/verify-tag-matches-manifests.mjs. The PR-time
+# validate + build-site jobs live in ci.yml and are unchanged.
 
 name: Release
 

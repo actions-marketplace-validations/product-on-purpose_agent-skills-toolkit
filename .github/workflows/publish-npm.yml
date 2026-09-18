@@ -439,11 +439,9 @@ jobs:
 
       # ASKED FROM OUTSIDE THE THING IT CERTIFIES. Every other control in this file runs before the
       # registry write and certifies what is ABOUT to ship; the only evidence that it actually shipped
-      # was `npm publish` exiting 0, which is the publisher grading its own homework. v1.16.2 and
-      # v1.16.3 were tagged and GitHub-released on 2026-08-25 and never reached npm; three days later
-      # `latest` still served 1.16.1 and every automated signal in this repository was green. The tag
-      # trigger above fixed the FORGOTTEN publish. This step covers the publish that was not forgotten
-      # and still did not land.
+      # was `npm publish` exiting 0, which is the publisher grading its own homework. The tag trigger
+      # above fixed the FORGOTTEN publish. This step covers the publish that was not forgotten and
+      # still did not land.
       #
       # It compares the registry to the TAG, not to package.json: after `npm publish` the local
       # package.json is the very file the publish was derived from, so comparing to it is close to
