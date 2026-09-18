@@ -265,6 +265,27 @@ test("F-011: evaluate.mjs labels the operator finding instead of listing it as a
   });
 });
 
+test("F-011: the release report's own gateExit agrees with the process exit and the tier", () => {
+  withMinimalPlugin((dir) => {
+    writeFileSync(path.join(dir, CONFIG_FILENAME), BROKEN_JSON);
+    const proc = runCliScript("scripts/evaluate.mjs", [dir, "--report=release", "--format=json"]);
+    const doc = JSON.parse(proc.stdout);
+    // Delete the exit-2 override in scripts/lib/release-report.mjs and this is 1 while `proc.code` is 2:
+    // the release card read "Gate exit code | 1 (fails)" in the same document whose masthead chip, KPI
+    // and metadata table all read 2 (measured on this fixture, md and html).
+    assert.equal(doc.release.gateExit, 2, "release.gateExit is the number the release card prints");
+    assert.equal(proc.code, 2, "and the process exit it claims to be");
+    assert.equal(doc.tier, "universal", "while the tier stays the plugin's, unmoved");
+    assert.equal(doc.release.goNoGo, "no-go", "a rubric that never loaded is never a go");
+
+    // The rendered surfaces, because gateExit is a number a reader only ever meets through them.
+    const md = runCliScript("scripts/evaluate.mjs", [dir, "--report=release", "--format=md"]).stdout;
+    assert.ok(!/Gate exit code \| 1 \(fails\)/.test(md), "no site in the document may still say 1");
+    assert.match(md, /\| Gate exit code \| 2 \(fails\) \|/);
+    assert.match(md, /Gate exit 2, release notes missing/);
+  });
+});
+
 // --- F-011, the third surface: the published GitHub Action ----------------------------------------
 
 test("F-011: the Action's own pipeline survives a broken rubric and reports it as its own output", () => {

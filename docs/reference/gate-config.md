@@ -110,4 +110,4 @@ npx agent-skills-toolkit evaluate <path> --json
 npx agent-skills-toolkit evaluate <path> --format=html --profile plain-plugin --out report.html
 ```
 
-An unknown `--profile` or `--mode` is rejected with exit code 2. So is an unknown flag, a root that is not a directory, and an `askit.config.json` that does not load (see [Schema](#schema)). Exit **1** is reserved for the one thing it should mean: the plugin failed its own declared tier.
+An unknown `--profile` or `--mode` is rejected with exit code 2, and so is an `askit.config.json` that does not load (see [Schema](#schema)).
