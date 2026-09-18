@@ -12,11 +12,11 @@
 //               own; it MUST only invoke the portable scripts"). Pulled out to match that rule, the
 //               same way check-readme-version.mjs and check-release-counts.mjs already do for their
 //               own guards.
-// note:         release.yml runs the identical comparison at GitHub-release time, as its own inline
-//               `run:` block. That duplication is real and pre-existing; unifying the two was
-//               judged out of scope here because release.yml was not one of the files this pass
-//               touched (see the v1.11.0 pre-release adversarial-review fix for publish-npm.yml and
-//               deploy-pages.yml) - flagged rather than silently left unmentioned.
+// note:         release.yml USED TO run the identical comparison at GitHub-release time as its own
+//               inline `run:` block, and this docblock recorded that duplication as real, pre-existing
+//               and out of scope. It is neither any more: release.yml now calls this script too, so
+//               there is one implementation of the invariant rather than two free to drift apart, and
+//               that is the whole of what the note said was missing.
 // note:         round 2 of that same review named a related risk in verify-release-tag.mjs and
 //               verify-tag-ancestry.mjs (a verifier shipped by the candidate, checking the
 //               candidate) and did not name this script, but the reviewer's own framing applies to
@@ -26,7 +26,10 @@
 //               the candidate's checked-out files - reading those files as data (a `version` string
 //               field) rather than executing the candidate's own copy of this code. The `root`
 //               parameter already existed for testability; the workflow fix is free because of it.
-// used-by:      .github/workflows/publish-npm.yml, the "Guard - tag must equal every version-
+// used-by:      .github/workflows/release.yml, the "Guard - tag must equal every version-bearing
+//               manifest" step - run at GitHub-release time from the tagged checkout itself, with the
+//               raw ref name (this script strips the leading "v");
+//               .github/workflows/publish-npm.yml, the "Guard - tag must equal every version-
 //               bearing manifest (main's code, candidate's files)" step - runs from `trust-root/`
 //               (main's checkout) with `root` set to `../candidate` (the candidate's checkout),
 //               after the candidate is checked out (it needs the candidate's files) but before
