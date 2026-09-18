@@ -385,11 +385,12 @@ extractions are done and two are not.
 |---|---|
 | The twenty labelled `U5` descriptions behind the "passes 2 of 10 good, 8 of 10 useless" figure | **EXTRACTED.** `tests/fixtures/u5-calibration/`, running on every `npm test` |
 | The `U18` boundary sizes | **EXTRACTED.** Derived from the exported constant, so the check and its test cannot disagree |
-| `01-potemkin-gold` - the 33-file placeholder plugin that grades Advanced with 0 errors and 0 warnings | **NOT extracted.** It lives in the 2026-09-04 audit's corpus. E61's headline claim was re-verified by hand on 2026-09-09 at the current 35-check spine, but nothing in `npm test` re-runs it |
-| `09-pin-abuse` - the fixture behind the nine-waived-checks figure | **NOT extracted, and currently NOT rebuildable.** The audit's `corpus/build.mjs` resolves paths against a hard-coded `audit/` directory at a repository root and fails after the folder was consolidated into `_local/audit/`. The nine is recorded in E62 as the AUDIT's measurement, never as one reproduced here. What WAS reproduced here on 2026-09-09: grading this repository at `"standard": "0.9"` gives 78 errors and 1 warning where its own pin gives 79 and 0 |
+| `01-potemkin-gold` - the 33-file placeholder plugin that grades Advanced with 0 errors and 0 warnings | **EXTRACTED 2026-09-17.** `tests/fixtures/audit-corpus/potemkin-gold/`, three tests pinning the grade, running on every `npm test`. E61's headline claim is now re-run from a clean clone rather than re-verified by hand |
+| `09-pin-abuse` - the fixture behind the nine-waived-checks figure | **EXTRACTED 2026-09-17.** `tests/fixtures/audit-corpus/pin-abuse/`, five tests pinning what a Standard pin buys: at pin `0.9` the tree is tier advanced, exit 0, 0 errors, 11 warnings all downgraded; re-pinned to `0.16`, `"banana"` or `"1.0"` it is tier none, exit 1, 12 errors, zero downgrades - so an unknown or malformed pin fails SAFE and only a valid-but-old pin waives anything. The audit's `build.mjs` was deliberately NOT repaired: it resolves paths against a hard-coded `audit/` root and lives in gitignored material, so repairing it produces a script nobody can run from a clean clone. Superseded detail, kept for the record: **it was NOT rebuildable.** The audit's `corpus/build.mjs` resolves paths against a hard-coded `audit/` directory at a repository root and fails after the folder was consolidated into `_local/audit/`. The nine is recorded in E62 as the AUDIT's measurement, never as one reproduced here. What WAS reproduced here on 2026-09-09: grading this repository at `"standard": "0.9"` gives 78 errors and 1 warning where its own pin gives 79 and 0 |
 
-Extracting the two remaining fixtures, or rebuilding equivalents that do not depend on the audit's
-path layout, is open work. It is not blocked on any decision.
+**CLOSED 2026-09-17.** Both fixtures are extracted and both are tested. Nothing in this table now
+depends on the audit's path layout, which was the point: every figure above is re-runnable from a clean
+clone with `npm test`.
 
 ---
 
