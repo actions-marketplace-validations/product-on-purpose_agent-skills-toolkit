@@ -56,7 +56,7 @@ export function stripTag(tag) {
  * request addresses a sub-resource of the scope instead of the package.
  */
 export function packumentUrl(registry, name) {
-  return `${String(registry).replace(/\/+$/, "")}/${String(name).replace("/", "%2f")}`;
+  return `${String(registry).replace(/\/+$/, "")}/${String(name).replace(/\//g, "%2f")}`;
 }
 
 /**

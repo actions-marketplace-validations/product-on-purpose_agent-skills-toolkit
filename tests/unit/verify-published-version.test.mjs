@@ -65,6 +65,17 @@ test("stripTag accepts a tag with or without the leading v, matching verify-tag-
 test("packumentUrl percent-encodes a scoped name, so the request addresses the package and not the scope", () => {
   assert.equal(packumentUrl(DEFAULT_REGISTRY, "agent-skills-toolkit"), "https://registry.npmjs.org/agent-skills-toolkit");
   assert.equal(packumentUrl("https://registry.npmjs.org/", "@acme/thing"), "https://registry.npmjs.org/@acme%2fthing");
+
+  // THE REGRESSION. The first version of packumentUrl used the STRING form, .replace("/", "%2f"), which
+  // replaces only the FIRST occurrence. CodeQL caught it as a high-severity "incomplete string escaping
+  // or encoding" finding on the pull request; no test did, and no honest input could have - a conforming
+  // scoped name carries exactly one slash, so every real call produced the right URL. That is precisely
+  // what made it worth a linter and a pinned case rather than a reading.
+  assert.equal(
+    packumentUrl("https://registry.npmjs.org/", "@a/b/c"),
+    "https://registry.npmjs.org/@a%2fb%2fc",
+    "every slash is encoded, not only the first; reverting to the string-form replace fails here"
+  );
 });
 
 test("a packument that serves the version passes, and reports latest without asserting it", () => {
