@@ -100,8 +100,12 @@ ADR that does not exist yet** - the next free ADR number is **0062**.
 > 3. **Proven able to fail, twice:** (a) the meta-test reds when one firing case is deleted (mutation); (b) one sampled check per band gets the full E51 treatment - the check's guard logic temporarily inverted locally to confirm the firing test actually depends on the check's behavior, not on fixture accidents.
 > 4. Suite time impact measured against a **named budget**: the mutation corpus adds no more than 15 percent to `npm test` wall-clock, or the increment does not ship as-is and the overage is reported with a plan. (Amended 2026-08-31: the criterion previously read "measured and stated ... if not, say so", which has no threshold and no consequence - measuring and stating a catastrophic number satisfied it exactly as well as a good one.)
 
-**Annotated 2026-09-17.** Criterion 4's budget is measured against a baseline of **1588 tests, 0
-failures, 56.2 s wall-clock** on this workstation at `ab0dc20`. Fifteen percent of that is 8.4 s.
+**Annotated 2026-09-17.** The suite at `ab0dc20` is **1588 tests, 0 failures**. Criterion 4's budget
+cannot be set from a single baseline run on this workstation: three consecutive `npm test` runs
+reported `duration_ms` of **49.8 s, 59.6 s and 62.3 s**, a 12.5 s spread, where fifteen percent of the
+fastest is 7.5 s. **The run-to-run noise is larger than the budget it would be judged against**, so
+whoever does this work has to establish the baseline as a repeated median on the machine that judges
+it, and measure the corpus's cost the same way.
 This item also absorbs the 2026-09-04 audit's companion finding that *six checks hang on one test
 each* - that is the same gap counted from the other end.
 
@@ -293,7 +297,7 @@ v1.19.0, cut 2026-09-17.
 |---|---|---|---|
 | **3. "Evidence"** | the eval instrument becomes trustworthy enough to publish a number from | RS-B1 complete - the E16 ruling implemented, E17's adjudication, E20's key relocation, E15's runner fixes - then the E13 model-triple readings publish | **The implementation itself.** The ruling has been made since 2026-08-31 and nothing has been written. Independent work has correctly proceeded past it; cuts 2 and 4 did not queue behind it |
 | **5. "The graded cohort"** | the toolkit grades trees that are not ours, in public | RS-E2 (the cohort page) plus RS-E1's one-paragraph public summary, plus the sixth and last placement of the tier-scope routing sentence, which ships with the page | **Four things, none of them code.** (a) RS-E1's internal corroboration run has not happened. (b) The member list is unpicked - issue #300 closed NOT_PLANNED, deferred to this cut's planning. (c) Every member must be notified and given a reply window before publication. (d) The 2026-09-04 dry run found four of five candidates pass every portable check, so the page's framing has to be settled before it is built |
-| **6. "Standard 0.17, the graduations"** | the windows close, and no new ones open | The cap expiries, and nothing else. Ruled graduations-only | **Nothing technical.** Its content is fixed and its identity is deliberately legible in one sentence. The source plan's only timing constraint is "no sooner than a real migration window after cut 4", which shipped 2026-09-17 |
+| **6. "Standard 0.17, the graduations"** | the windows close, and no new ones open | The cap expiries, and nothing else. Ruled graduations-only | **Nothing technical, but a timing constraint that has not elapsed.** Its content is fixed and its identity is deliberately legible in one sentence. The source plan's timing constraint, quoted whole: *"No sooner than a real migration window after cut 4 (Recommended: 2 to 3 weeks, the 0.13-to-0.15 cadence)"*. Cut 4 shipped 2026-09-17, so that window is running rather than closed. No date is committed here |
 
 **What cut 6 actually closes, measured rather than asserted.** At `ab0dc20` four checks carry
 `until: "0.17"`: `U18` (the Codex command size cap), `G1` (hook documentation), `G2` (self-hosting)
@@ -353,14 +357,14 @@ it has none.
 
 # 5. Hard dates
 
-**Re-verified 2026-09-17.** Two of the source plan's four dates did not survive checking and are
+**Re-verified 2026-09-17.** Three of the source plan's four dates did not survive checking and are
 corrected here rather than carried.
 
 | Date | What | State |
 |---|---|---|
-| 2026-09-15 | `standards-watch`'s first SCHEDULED run - the acceptance criterion that cannot be faked, because the `repin-watch` lesson was that both of its real runs were hand-dispatched | **DONE.** Run `34969288827`, `event: schedule`, conclusion `success`. It found drift and opened [issue #323](https://github.com/product-on-purpose/agent-skills-toolkit/issues/323) one minute later |
+| 2026-09-15 | `standards-watch`'s first SCHEDULED run - the acceptance criterion that cannot be faked, because the `repin-watch` lesson was that both of its real runs were hand-dispatched | **DONE.** Run `34969288827`, `event: schedule`, conclusion `success`. It found drift and opened [issue #323](https://github.com/product-on-purpose/agent-skills-toolkit/issues/323) twelve seconds later - the run was created at 12:30:52Z and the issue at 12:31:04Z |
 | ~~2026-09-18 to 09-20~~ | re-verify the two vendor probes | **SUPERSEDED.** Both probes were re-run and re-verified on **2026-09-17** (PR #327), with both `kind: "probe"` claims now reading `verifiedOn: 2026-09-17`. The window closed early and correctly |
-| ~~2026-09-23/24~~ | the probes go stale and block every release | **SUPERSEDED by the re-run.** The 30-day clock restarts at 2026-09-17, so the probes go STALE **on or about 2026-10-17 to 10-18** and block every release from that morning. The date is given as a range deliberately: `scripts/lib/vendor-watch.mjs` computes age as `Math.round((today - verifiedOn) / 86400000)` and tests `age > FRESHNESS_DAYS` with `FRESHNESS_DAYS = 30`, so the rounding puts the flip near midday rather than on a clean date boundary. **Do not plan a release against the last day of a rounded window** - re-run the probes a week early, as was done this month |
+| ~~2026-09-23/24~~ | the probes go stale and block every release | **SUPERSEDED by the re-run.** The 30-day clock restarts at 2026-09-17, so both probes go STALE on **2026-10-18** and block every release from that day. Measured, not reasoned: `npm run vendor-watch -- --today 2026-10-17` reports `9 claims: 7 hold, 0 MISSING, 0 stale, 2 unchecked` and exits 0, and `--today 2026-10-18` reports `2 stale` and exits 1. There is no boundary ambiguity to hedge: `scripts/lib/vendor-watch.mjs` parses both dates at `T00:00:00Z`, so the age is a whole number of days and `age > 30` flips on one date. **Do not plan a release against the last day of the window** - re-run the probes a week early, as was done this month |
 | ~~2026-11-15~~ | earliest revisit of the standards-watch gating question | **MOVED to 2026-12-15 at the earliest.** [E58 (should standards-watch gate release-ready)](backlog/enhancements.md) requires three clean SCHEDULED runs and says the count RESTARTS if any of them finds drift. The 2026-09-15 run found drift. The next three scheduled runs are 10-15, 11-15 and 12-15 |
 
 **A note on the probe clock, because it is the one date that can block a release with no warning.**
