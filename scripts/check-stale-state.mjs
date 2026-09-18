@@ -16,17 +16,21 @@
 //               commit: up to fabb38a, `git log -p -- package.json` shows the `test` script had gained
 //               only check-readme-version, check-doc-enumerations and check-claim-citations - THIS file
 //               is the fourth, added by the same change that found the defect, so the history that
-//               proves the point is deliberately dated rather than written as a standing count. It is also
-//               structurally impossible, because check-release-counts SPAWNS `node --test` to read the
-//               suite total, so running it from inside `npm test` would recurse. Nothing could catch it:
+//               proves the point is deliberately dated rather than written as a standing count. Keeping
+//               check-release-counts out of the unit suite is a DECISION, not an impossibility: E27 (the
+//               release-time stated-test-count gate) in that same backlog file records it as wired to the
+//               release gate and deliberately not to `npm test`. Nothing could catch it:
 //               check-release-counts polices a stale NUMBER and check-doc-enumerations a stale SPINE
 //               COUNT, while this is a stale statement about the repository's own wiring.
 // used-by:      npm test, tests/unit/stale-state.test.mjs
 // scoop-design: the trigger scoops EVERY backticked script token in the claim's subject list, not the
-//               one adjacent to the verb. That is check-claim-citations' recorded lesson applied
-//               verbatim: its first design keyed off the words immediately preceding the token and
-//               caught one defect in four. Here the false name sits THIRD in a four-item list, so an
-//               adjacency rule would have read `check-claim-citations` (true) and passed.
+//               one adjacent to the verb. That is NOT what caught this defect, and saying otherwise is the
+//               overstatement an earlier draft of this block shipped: the false name sat LAST of the four,
+//               immediately before the verb, so an adjacency rule would have caught this one as well. Every
+//               name is graded so that a false name written EARLIER in a list is caught too - a case this
+//               instance does not exercise, and the reason the scoop is proved by a test rather than by this
+//               defect: tests/unit/stale-state.test.mjs asserts all four names come back from the one
+//               sentence, so the three TRUE ones are shown to be graded and passed rather than skipped.
 //               A path-existence design was built and measured FIRST, per the task that commissioned
 //               this file, and REJECTED on evidence rather than taste. Two independent results killed
 //               it. (1) Swept over every tracked `.md`, an absence predicate bound to a backticked
@@ -56,7 +60,9 @@
 //               blockquoted version notes. A NEGATED claim is skipped rather than checked, because
 //               "`X` does not run in `npm test`" is the shape the repair for a finding here is written
 //               in, and a guard that fires on the prose explaining its own finding is the recorded
-//               failure this repository has already had once.
+//               failure this repository has already had once. The negation is looked for in the claim
+//               PLUS the clause leading into it, bounded by the nearest `.` or `;` and 80 characters; a
+//               denial written further back in the sentence than that is not seen.
 // not-a-check:  report-only over documents, exits 1 on a false wiring claim. Deliberately NOT a
 //               Standard spine check - it polices THIS repository's records rather than a graded
 //               plugin's shape, so it lives beside check-claim-citations and check-doc-enumerations.
@@ -111,6 +117,19 @@ const CLAIM = new RegExp(
  * on the sentence fixing it is the failure mode this repository recorded once already.
  */
 const NEGATION = /\b(?:not|never|n't|no\s+longer|rather\s+than|instead\s+of|cannot|neither|nor)\b/i;
+/**
+ * How far back of the match a negation still counts. Tested against the match alone, the window began at
+ * the claim's first backtick, so a denial placed BEFORE the subject list ("It is not true that `X` runs
+ * in `npm test`") was invisible and the guard fired on a sentence denying the claim. The lead-in stops at
+ * the nearest `.` or `;` before the match, so a negation in the previous sentence cannot suppress a real
+ * claim, and is capped at 80 characters. CLAIM itself is untouched, so this can only ever make the guard
+ * skip MORE - no sentence can start firing because of it.
+ */
+const LEAD_IN = 80;
+export function negationWindow(line, index, matched) {
+  const start = Math.max(0, index - LEAD_IN, line.lastIndexOf(".", index) + 1, line.lastIndexOf(";", index) + 1);
+  return line.slice(start, index) + matched;
+}
 const TOKEN = /`([A-Za-z0-9_@./-]+)`/g;
 
 const read = (p) => fs.readFileSync(p, "utf8");
@@ -124,7 +143,7 @@ const read = (p) => fs.readFileSync(p, "utf8");
 export function claimsOnLine(line, vocab) {
   const out = [];
   for (const m of line.matchAll(CLAIM)) {
-    if (NEGATION.test(m[0])) continue;
+    if (NEGATION.test(negationWindow(line, m.index, m[0]))) continue;
     const npmScript = m[3].replace(/\s+/g, " ").startsWith("run ")
       ? m[3].replace(/\s+/g, " ").slice(4).trim()
       : "test";

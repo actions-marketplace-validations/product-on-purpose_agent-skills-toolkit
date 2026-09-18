@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   findFalseWiringClaims,
   claimsOnLine,
+  negationWindow,
   resolveNpmScript,
   scriptVocabulary,
 } from "../../scripts/check-stale-state.mjs";
@@ -141,4 +142,32 @@ test("stale state: a backticked token that is not one of this repo's scripts is 
   // ends "and run on every `npm test`" (docs/internal/audit-intake.md), and it is a fixture directory,
   // not a script. Scooping it would produce a finding no edit could satisfy.
   assert.deepEqual(claimsOnLine("the descriptions were extracted to `tests/fixtures/u5-calibration/` and run on every `npm test`", VOCAB), []);
+});
+
+test("stale state: a negation placed BEFORE the subject list is seen, and only within its own sentence", () => {
+  // A reported false positive, fixed here. NEGATION used to be tested against the match alone, and a match
+  // begins at the claim's first backtick - so "It is not true that `X` runs in `npm test`" carried its
+  // denial outside the window and the guard fired on a sentence denying the claim. Both directions, because
+  // an exclusion that swallows the positive case would pass the first assertion for the wrong reason.
+  const denied = "It is not true that `check-release-counts` runs in `npm test`.";
+  const asserted = "It is true that `check-release-counts` runs in `npm test`.";
+  assert.deepEqual(claimsOnLine(denied, VOCAB), [], "a denial ahead of the subject list is a negation");
+  assert.deepEqual(
+    claimsOnLine(asserted, VOCAB).map((c) => c.name),
+    ["check-release-counts"],
+    "the same lead-in without the denial IS a claim - the window must not swallow the positive case",
+  );
+});
+
+test("stale state: the negation lead-in stops at the sentence before, so it cannot mute a real claim", () => {
+  // The cost of the fix above, bounded and proved. Widening the negation window makes the guard skip more,
+  // and a window that ran to the start of the line would let any earlier "not" hide a false claim written
+  // later in the same paragraph. The lead-in stops at the nearest `.` or `;`.
+  const line = "That is not the wiring. `check-release-counts` runs in `npm test`.";
+  assert.deepEqual(
+    claimsOnLine(line, VOCAB).map((c) => c.name),
+    ["check-release-counts"],
+    "a negation in the previous sentence must not suppress the claim in this one",
+  );
+  assert.equal(negationWindow(line, 24, "TAIL"), " TAIL", "the window starts after the full stop, carrying nothing from the sentence before");
 });
