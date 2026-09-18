@@ -13,8 +13,10 @@
 //               `release-ready` gate (scripts/lib/release-ready.mjs), which is the SAME release-time
 //               side of the contrast the sentence was drawing - so the entry's own argument understated
 //               its hole by half while reading as a careful measurement. The claim was never true at any
-//               commit: `git log -p -- package.json` shows the `test` script has only ever gained
-//               check-readme-version, check-doc-enumerations and check-claim-citations. It is also
+//               commit: up to fabb38a, `git log -p -- package.json` shows the `test` script had gained
+//               only check-readme-version, check-doc-enumerations and check-claim-citations - THIS file
+//               is the fourth, added by the same change that found the defect, so the history that
+//               proves the point is deliberately dated rather than written as a standing count. It is also
 //               structurally impossible, because check-release-counts SPAWNS `node --test` to read the
 //               suite total, so running it from inside `npm test` would recurse. Nothing could catch it:
 //               check-release-counts polices a stale NUMBER and check-doc-enumerations a stale SPINE
@@ -67,6 +69,11 @@ import { execFileSync } from "node:child_process";
  * Documents that correctly state the wiring of their own day. A release packet, an ADR and a changelog
  * section are dated records; policing them would force an edit to a shipped document every time the
  * wiring changed. Same convention check-doc-enumerations uses for stale spine counts.
+ *
+ * `tests/` is in this list for a DIFFERENT reason, stated rather than blurred: a fixture is not a dated
+ * record, it is deliberately-false prose. Excluding it is what stops this guard grading its own
+ * regression corpus when it runs at the repository root, where the captured pre-fix line would red
+ * every run forever.
  */
 const HISTORY_FILES = new Set(["CHANGELOG.md", "RELEASE-NOTES.md", "docs/internal/RELEASE-HISTORY.md"]);
 const HISTORY_DIRS = [
