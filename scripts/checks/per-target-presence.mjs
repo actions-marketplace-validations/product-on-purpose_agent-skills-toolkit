@@ -1,5 +1,7 @@
 // what-it-is:   the per-target-presence check (S6)
-// what-it-does: asserts each convergent component is present in the correct format for every declared target agent
+// what-it-does: asserts each declared agent-target has its native plugin manifest on disk, and - when the plugin ships
+//               .mcp.json - that each of those manifests carries the "mcpServers" pointer. It does NOT check that
+//               any other convergent component (subagent, command, workflow) is emitted for a target
 // why:          enforces the Standard requirement S6 deterministically, one module per reqId, so the gate stays model-free
 // used-by:      registered in scripts/lib/registry.mjs; run by scripts/check.mjs and tier-report.mjs
 import path from "node:path";
