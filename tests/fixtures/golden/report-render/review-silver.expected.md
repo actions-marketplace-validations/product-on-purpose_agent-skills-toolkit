@@ -230,9 +230,9 @@ Use askit-build-docs (folder-readme mode) on skills/sf-do-thing/README.md: scaff
 
 ## 11 Per-check glossary
 
-**Summary: what each of the 35 checks verifies, in one line. A plain-language reference for every PASS / FAIL / WARN / N/A row above.**
+**Summary: why each of the 35 checks matters, in one line. A plain-language reference for every PASS / FAIL / WARN / N/A row above. For what each check actually verifies, see the Standard and the checks reference.**
 
-| Check | Tier | What it verifies |
+| Check | Tier | Why it matters |
 | --- | --- | --- |
 | U1 library-json | Bronze | Without a valid library.json a tool cannot identify the library, its version, or the Standard it pins, so nothing downstream can grade, install, or emit it. |
 | U2 anatomy | Bronze | The agentskills.io anatomy (a root AGENTS.md and the standard component folders) is how any agent discovers what the library contains; a broken anatomy makes the library unreadable to the tools meant to load it. |
