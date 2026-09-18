@@ -7,6 +7,11 @@
 > packets). Do not add accretive per-release paragraphs here; append them to those instead.
 >
 > Last updated: 2026-08-28 (v1.17.0 fully shipped through the approval-gated publish path, first tag to do so).
+>
+> **This page is the STATE. The PLAN is [`roadmap.md`](roadmap.md)** (added 2026-09-17): what is open,
+> what each open item depends on, what "done" means for it with its acceptance criteria quoted
+> verbatim, and which cuts are sequenced behind which blocker. Before that page existed, the work was
+> steered from two documents that live only on one machine.
 
 ## Current state
 
@@ -463,9 +468,18 @@ blocked its own first real run** - on 7 failing tests and a stale count that had
   The tarball was also checked from outside itself: **all eight maintainer-only libraries** are absent
   (`action-pin-watch`, `release-ready`, `vendor-watch`, `standards-watch`, `eval-run`, `advisory-score`,
   `craft-review`, `stated-counts`), 72 files, 211.7 kB packed.
-  **Still outstanding, and blocking nothing:** the package is still owned by `jprisant` rather than
-  the `product-on-purpose` org. The transfer must be done in the npmjs.com web UI, because
-  `npm owner add product-on-purpose:developers` expects a username, not a team.
+  **CORRECTED 2026-09-17, because this paragraph carried a false claim.** It said the org transfer
+  "must be done in the npmjs.com web UI". It was done from the CLI on 2026-09-04 and verified live:
+  `agent-skills-toolkit` is granted `read-write` to `product-on-purpose:developers`, which is what
+  the 2026-08-31 RS-E5 ruling (npm package ownership) asked for. An npm organization CAN govern an
+  unscoped package; `npm access grant` takes the team and the package as separate arguments. What
+  remains true is narrower and is the thing actually worth tracking: `npm owner add` does expect a
+  username rather than a team, the package owner list is still one account, the org has one owner,
+  the `developers` team has one member and `maintainers` has zero. **The organization is a layer of
+  indirection over a single point of failure, not the removal of one.** Closing it needs a second
+  trusted human with an npm account, tracked as
+  [issue #313](https://github.com/product-on-purpose/agent-skills-toolkit/issues/313). Blocking
+  nothing today, which is the trap.
 - **The validator-parity harness is GATING** as of v1.12.0, discharging ADR 0042's scheduled flip.
   Its stated condition was met by v1.11.0 and v1.11.1 completing real CI cycles green. One
   consequence was accepted knowingly: under gating, a run where `uvx` cannot be installed reds a
