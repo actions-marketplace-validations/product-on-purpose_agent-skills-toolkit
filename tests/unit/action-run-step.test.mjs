@@ -249,6 +249,10 @@ if (argv.includes("--json")) {
     findings: [],
     errorCount: 1,
     warnCount: 0,
+    // The stub mirrors the real buildJsonReport shape, and the outputs bridge validates every count
+    // fail-closed. Omitting this one made the stub drift from check.mjs and the step died on schema
+    // validation instead of exercising the SARIF ambiguity this test is about.
+    operatorErrorCount: 0,
     exitCode: 1,
     config: {},
     tierReport: { tier: "none", satisfies: [], blocked: {}, declaredTier: null },

@@ -52,7 +52,7 @@ There is deliberately no `askit` alias. `askit` is a real, unrelated package alr
   run: npx agent-skills-toolkit .
 ```
 
-The exit code is the whole contract: a red step means at least one gate-failing error at your plugin's declared tier. Point it at any directory that carries a `library.json` - your own repository, a submodule, or a path checked out in an earlier step.
+The exit code is the whole contract, and it has three values. **1** means at least one gate-failing error at your plugin's declared tier - the plugin failed. **2** means the RUN was misconfigured and says nothing about the plugin: an unknown flag, an invalid `--profile` or `--mode`, a root that is not a directory, or an `askit.config.json` that does not load. **0** means neither. Point it at any directory that carries a `library.json` - your own repository, a submodule, or a path checked out in an earlier step.
 
 ## Use it as a library
 
