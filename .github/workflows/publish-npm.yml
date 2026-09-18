@@ -48,12 +48,11 @@
 # Per Standard sec 4.1/4.4, holds no validation logic of its own: every decision (tag format,
 # scripts/verify-release-tag.mjs; tag ancestry, scripts/verify-tag-ancestry.mjs; tag/manifest
 # agreement, scripts/verify-tag-matches-manifests.mjs; the test suite and the gate, npm test and
-# node scripts/check.mjs) lives in a portable script under scripts/ - the same command a contributor
-# runs locally. release.yml runs an inline copy of the tag/manifest-agreement check at GitHub-release
-# time rather than calling verify-tag-matches-manifests.mjs; that duplication is real and predates
-# this review. Unifying it was judged out of scope here, since release.yml was not one of the files
-# this pass touched - flagged rather than silently left unmentioned (see verify-tag-matches-
-# manifests.mjs's own docblock).
+# node scripts/check.mjs; the post-publish registry assertion,
+# scripts/verify-published-version.mjs) lives in a portable script under scripts/ - the same command a
+# contributor runs locally. release.yml used to run an INLINE COPY of the tag/manifest-agreement check
+# at GitHub-release time; it now calls verify-tag-matches-manifests.mjs, so there is one implementation
+# of that invariant rather than two free to drift apart.
 #
 # SECURITY, round 1 (v1.11.0 pre-release adversarial review): this file previously interpolated
 # `${{ inputs.tag }}` directly into Bash `run:` lines. GitHub Actions expands that expression into
@@ -164,6 +163,7 @@ jobs:
       TAG: ${{ inputs.tag || github.ref_name }}
     outputs:
       sha: ${{ steps.resolve-tag.outputs.sha }}
+      tag: ${{ steps.resolve-tag.outputs.tag }}
     steps:
       # --- Trust root: everything from here through "Verify tag is reachable from main" runs main's
       # code against main's own tree. The candidate has not been checked out yet and nothing below
@@ -214,7 +214,9 @@ jobs:
       - name: Resolve the tag to a commit sha (plumbing; main's git object database)
         id: resolve-tag
         working-directory: trust-root
-        run: echo "sha=$(git rev-parse "refs/tags/$TAG^{commit}")" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "sha=$(git rev-parse "refs/tags/$TAG^{commit}")" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       # Finding 2 (round 1) fixed correctly this time (round 2): proves the resolved commit is
       # reachable from protected main, not merely that its version strings agree with the tag - and
@@ -311,6 +313,8 @@ jobs:
     if: ${{ success() && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
     # Configure this environment once in repo Settings -> Environments (name: npm-publish) with a
     # required reviewer. GitHub Actions YAML cannot itself create that rule - naming the environment
     # THE LOAD-BEARING CONTROL IS EXTERNAL TO THIS FILE, and round 3 of the pre-release review is why.
@@ -432,3 +436,21 @@ jobs:
             echo ""
             echo "Published via trusted publishing (OIDC) with no stored credential; provenance attestations are generated automatically."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # ASKED FROM OUTSIDE THE THING IT CERTIFIES. Every other control in this file runs before the
+      # registry write and certifies what is ABOUT to ship; the only evidence that it actually shipped
+      # was `npm publish` exiting 0, which is the publisher grading its own homework. v1.16.2 and
+      # v1.16.3 were tagged and GitHub-released on 2026-08-25 and never reached npm; three days later
+      # `latest` still served 1.16.1 and every automated signal in this repository was green. The tag
+      # trigger above fixed the FORGOTTEN publish. This step covers the publish that was not forgotten
+      # and still did not land.
+      #
+      # It compares the registry to the TAG, not to package.json: after `npm publish` the local
+      # package.json is the very file the publish was derived from, so comparing to it is close to
+      # tautological. The tag is the independent name of the release.
+      #
+      # A red here does NOT mean anything was rolled back - nothing in this step can undo a publish.
+      # It means the release is UNVERIFIED, and that is the honest signal. Per Standard sec 4.1/4.4
+      # the decision lives in the portable script, not in this YAML.
+      - name: Verify the registry actually has this version (asked from outside the publish)
+        run: node scripts/verify-published-version.mjs "$TAG"

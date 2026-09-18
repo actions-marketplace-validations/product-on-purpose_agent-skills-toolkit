@@ -59,29 +59,15 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/release-ready.mjs
 
+      # Standard sec 4.1/4.4 forbids CI configuration from holding validation logic of its own. This
+      # comparison sat here as an inline bash loop while an identical, tested implementation already
+      # lived in scripts/verify-tag-matches-manifests.mjs - a duplication that BOTH that script's
+      # docblock and publish-npm.yml's named in as many words and left standing as "out of scope".
+      # Two implementations of one invariant is how they drift, and a tag guard that disagrees with the
+      # publish guard is worse than either alone. There is now one, and it is the one the tests cover.
+      # The script strips the leading "v" itself, so the raw ref name is what it is handed.
       - name: Guard - tag must equal every version-bearing manifest
-        run: |
-          set -euo pipefail
-          TAG="${GITHUB_REF_NAME#v}"
-          fail=0
-          check() {
-            file="$1"
-            actual="$(node -p "JSON.parse(require('fs').readFileSync('$file','utf8')).version")"
-            if [ "$actual" != "$TAG" ]; then
-              echo "::error file=$file::version $actual does not match tag $TAG"
-              fail=1
-            else
-              echo "ok: $file = $actual"
-            fi
-          }
-          check package.json
-          check library.json
-          check .claude-plugin/plugin.json
-          check .codex-plugin/plugin.json
-          if [ "$fail" -ne 0 ]; then
-            echo "::error::tag/version mismatch; aborting before publishing a release"
-            exit 1
-          fi
+        run: node scripts/verify-tag-matches-manifests.mjs "$GITHUB_REF_NAME" .
 
       # E57. The extraction MOVED out of this file into scripts/check-release-notes-section.mjs; it was
       # not copied. Standard sec 4.1/4.4 forbids CI configuration from holding validation logic of its own,
