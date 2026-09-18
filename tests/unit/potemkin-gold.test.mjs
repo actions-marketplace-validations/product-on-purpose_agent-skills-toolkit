@@ -22,8 +22,8 @@ const POTEMKIN = path.join(FIXTURES, "audit-corpus/potemkin-gold");
  *
  * `01-potemkin-gold` was built by the 2026-09-04 external audit as its `F-001`: thirty-three files that
  * satisfy every structural requirement the Advanced tier asks for and say nothing. Every skill body reads
- * `Do nothing.`; every docs page reads `Content for <its own title>.`. It is copied here byte-for-byte
- * from the audit's corpus.
+ * `Do nothing.`; four of the nine docs pages read `Content for <its own title>.`. It is copied here
+ * byte-for-byte from the audit's corpus.
  *
  * These are characterization tests. They assert what the gate DOES today, not what it should do. The
  * remedy - reporting something beside the tier that a placeholder plugin cannot score well on - is
@@ -65,8 +65,25 @@ test("E61 (the tier certifies file shape): every skill body in the fixture is st
 });
 
 test("E61 (the tier certifies file shape): the docs pages are placeholders too", () => {
-  const page = readFileSync(path.join(POTEMKIN, "docs/how-to/do-a-thing.md"), "utf8");
-  assert.match(page, /Content for Do a thing\./, "the how-to page must stay a placeholder");
+  // Four of the nine pages under docs/ carry the `Content for <its own title>.` placeholder, and the
+  // docblock above says four for that reason. The other five are deliberately NOT pinned because they
+  // are not that string: `architecture.md` is a one-line cross-reference, and the four folder READMEs
+  // are inventories that echo their own filenames.
+  const placeholders = {
+    "docs/explanation/architecture-detailed.md": "Architecture in detail",
+    "docs/how-to/do-a-thing.md": "Do a thing",
+    "docs/reference/checks.md": "Checks",
+    "docs/tutorials/first-steps.md": "First steps",
+  };
+  for (const [rel, title] of Object.entries(placeholders)) {
+    const page = readFileSync(path.join(POTEMKIN, rel), "utf8");
+    assert.match(
+      page,
+      new RegExp(`Content for ${title}\\.`),
+      `${rel} must stay a placeholder - it is the evidence. If you filled it in, revert and read ` +
+      `E61 (the tier certifies file shape) in docs/internal/backlog/enhancements.md first.`
+    );
+  }
   const agents = readFileSync(path.join(POTEMKIN, "AGENTS.md"), "utf8");
   assert.match(agents, /This plugin ships 3 skills\./);
 });
