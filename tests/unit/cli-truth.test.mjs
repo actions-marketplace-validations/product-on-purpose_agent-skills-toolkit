@@ -275,8 +275,11 @@ test("F-011: the release report's own gateExit agrees with the process exit and 
     // and metadata table all read 2 (measured on this fixture, md and html).
     assert.equal(doc.release.gateExit, 2, "release.gateExit is the number the release card prints");
     assert.equal(proc.code, 2, "and the process exit it claims to be");
-    assert.equal(doc.tier, "universal", "while the tier stays the plugin's, unmoved");
-    assert.equal(doc.release.goNoGo, "no-go", "a rubric that never loaded is never a go");
+    // CONTROLS, not guards: neither moves on the reversion this test names. The tier comes through
+    // the already-fixed computeTierReport, and this fixture is no-go on its missing release notes
+    // alone. They are here so a future change that DID move them is caught beside the number above.
+    assert.equal(doc.tier, "universal", "control: the tier stays the plugin's, unmoved");
+    assert.equal(doc.release.goNoGo, "no-go", "control: the verdict a reader sees beside the exit code");
 
     // The rendered surfaces, because gateExit is a number a reader only ever meets through them.
     const md = runCliScript("scripts/evaluate.mjs", [dir, "--report=release", "--format=md"]).stdout;
