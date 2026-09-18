@@ -53,8 +53,10 @@ const waivedRequirements = (g) =>
  * same way below, in a copy, which is where the audit's fourteen-warning figure comes back exactly.
  *
  * These are characterization tests. They assert what the gate DOES today. The remedy - bounding how far
- * back a pin may reach - is D-02, which is downstream of the deferred D-01 (a health score beside the
- * tier). When a floor lands, REWRITE these assertions; do not force this file green.
+ * back a pin may reach - is D-02 (whether a stale pin surfaces as a debt figure on the badge), which is
+ * downstream of the deferred D-01 (a health score beside the tier). Both are recorded under E62 (the pin
+ * has no floor) in docs/internal/backlog/enhancements.md. When a floor lands, REWRITE these assertions;
+ * do not force this file green.
  */
 test("E62 (the pin has no floor): a pin of 0.9 waives eight requirements and the gate still passes", () => {
   const g = runGate(PIN_ABUSE);
