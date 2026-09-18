@@ -58,24 +58,41 @@ const NEAR_CAP_NOTE =
   "the cap applies to the RENDERED skill (your frontmatter is replaced by generated skill frontmatter), so this raw size is a close proxy rather than an exact measure";
 
 /**
- * `since: "0.16"` AND a finding-level `until: "0.17"`, the pairing `catalogue-manifest-shape` established
- * and `hook-documentation` reused in the cut before this one.
+ * NO MIGRATION METADATA, DELIBERATELY. `U18` IS PERMANENTLY `warn` AND DOES NOT GRADUATE.
  *
- * Both are required and they do different jobs. `since` alone would gate the moment a consumer advanced
- * their pin to 0.16, giving a plugin that adopts the revision zero migration window for a check that did
- * not exist when they wrote the command. `until` alone would leave a plugin still pinned below 0.16
- * exposed to a check that did not exist at its pin. The reported `due` is the maximum across both
- * (ADR 0044 point 2), so the finding is only free when the later constraint lifts.
+ * It shipped in v1.19.0 carrying `capAt: "warn", until: "0.17"` and a reason reading "...and gates at
+ * 0.17". That was FALSE and is removed here rather than left as a record, because it was never a record
+ * of anything - it described a graduation that could not happen.
  *
- * ACTIVATION-NEUTRAL wording, per the `catalogue-manifest-shape` precedent: the reason says what the
- * migration is ABOUT and never claims a cap is currently in force, because under `--strict` the pin is
- * undefined, nothing binds, and this static text is still visible in `--json`.
+ * WHY IT COULD NOT HAPPEN, measured rather than argued. This check emits `SEVERITY.WARN` natively (see
+ * the finding below). A cap of `warn` over a finding that is ALREADY `warn` is a no-op: when the window
+ * closed at 0.17 the severity would have stayed exactly where it was. Demonstrated against a fixture
+ * with an oversized command, with `G2` in the same run as a positive control:
+ *
+ *     pin 0.16   U18 warn    G2 warn   (G2 held down by its own cap)
+ *     pin 0.17   U18 warn    G2 error  (G2 graduates; U18 does not move)
+ *
+ * `G1`, `G2` and `G8` all emit `SEVERITY.ERROR` natively and are capped DOWN to warn, so their caps do
+ * real work and they genuinely graduate at 0.17. `U18` was the odd one out.
+ *
+ * AND IT SHOULD NOT GRADUATE, which is why the fix is to delete the cap rather than to raise the
+ * severity. [ADR 0058] made this check `warn` on purpose: it measures the SOURCE file while the vendor
+ * caps the RENDERED skill, so the measurement is a declared proxy. Its own words - "a warn says 'at
+ * risk, go and check'; an error would assert a fact about rendered output the check never measured".
+ * The migration metadata contradicted the ADR that created the check.
+ *
+ * DELETING AN INERT CAP IS SAFE, AND THAT IS NOT THE GENERAL RULE. Expired caps elsewhere in this tree
+ * are deliberately left in place, because removing one red-lines every plugin still pinned below its
+ * version. That rule protects caps that DO something. This one changed no severity at any pin, which is
+ * measurable and was measured, twice and at different scopes. (1) The fixture above at both pins, with
+ * `G2` as a positive control, so "U18 did not move" is distinguishable from "caps do not work here".
+ * (2) The reference family: `evaluate ../agent-plugins --scope marketplace` before and after, 6 of 6
+ * members graded, output BYTE-IDENTICAL - same 3 collection errors, 0 collection warnings, verdict RED
+ * both times.
+ *
+ * `since: "0.16"` stays. It is not a migration window - it stops the check reaching a plugin pinned
+ * below the revision that introduced it, which is a real and still-necessary job.
  */
-const COMMAND_SIZE_MIGRATION = Object.freeze({
-  capAt: "warn",
-  until: "0.17",
-  reason: "U18 (command migration size cap) is introduced at Standard 0.16 and gates at 0.17",
-});
 
 /**
  * `vendor-cited` provenance rather than `objective`. A byte count IS objective, but the 4000 is not this
@@ -122,7 +139,7 @@ export function check(ctx) {
         meta.id,
         SEVERITY.WARN,
         `command "${rel}" is ${bytes} bytes, over the ${CODEX_COMMAND_SKILL_MAX_BYTES}-byte cap Codex applies when it migrates commands into skills. Codex SKIPS an oversized command rather than truncating it: no skill is written, no error is raised, and the command does not exist on Codex at all. Note that ${NEAR_CAP_NOTE}. Split the command, or move the bulk of it into a skill the command points at.`,
-        { file: rel, reqId: meta.reqId, migration: COMMAND_SIZE_MIGRATION }
+        { file: rel, reqId: meta.reqId }
       )
     );
   }
