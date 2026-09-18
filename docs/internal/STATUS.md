@@ -6,7 +6,8 @@
 > technical history), and `docs/internal/release-plans/` (the per-release spec + implementation
 > packets). Do not add accretive per-release paragraphs here; append them to those instead.
 >
-> Last updated: 2026-08-28 (v1.17.0 fully shipped through the approval-gated publish path, first tag to do so).
+> Last updated: 2026-09-17 (the plan moved into the repository as [`roadmap.md`](roadmap.md), and this
+> page's npm-ownership paragraph was corrected against a live reading).
 >
 > **This page is the STATE. The PLAN is [`roadmap.md`](roadmap.md)** (added 2026-09-17): what is open,
 > what each open item depends on, what "done" means for it with its acceptance criteria quoted
