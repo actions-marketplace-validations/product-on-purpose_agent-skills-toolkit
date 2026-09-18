@@ -28,7 +28,18 @@ By default the gate grades every plugin against the full Advanced Skill Library 
 
 All keys are optional; an absent file, an empty `{}`, or any absent key falls back to the documented default. A malformed file is surfaced as a finding, never a crash.
 
-**A problem in this file is an OPERATOR error, not a conformance defect of the plugin.** `askit.config.json` selects the rubric; it is not part of what is being graded. Every finding the loader emits is labelled `[operator/...]`, is printed in its own block ahead of the findings, and is excluded from the tier, the error count and the warning count. A fatal problem - the file is not valid JSON, or is not a JSON object - means the rubric in force is not the one you selected, so the run exits **2** (this CLI's operator-error code) rather than 1, which would say the plugin failed. This is a CLI behaviour, not a Standard requirement: no check, severity or `since` window changed. Previously a trailing comma here took a conforming Bronze plugin to `Tier: None` with exit 1, measured on a clone of `tests/fixtures/golden/minimal-skill`.
+**A problem in this file is an OPERATOR error, not a conformance defect of the plugin.** `askit.config.json` selects the rubric; it is not part of what is being graded. Every finding the loader emits is labelled `[operator/...]` and can never move the tier, in either CLI. A fatal problem - the file is not valid JSON, or is not a JSON object - means the rubric in force is not the one you selected, so the run exits **2** (this CLI's operator-error code) rather than 1, which would say the plugin failed. `check.mjs` and `evaluate.mjs` return the same exit code for the same directory. This is a CLI behaviour, not a Standard requirement: no check, severity or `since` window changed. Previously a trailing comma here took a conforming Bronze plugin to `Tier: None` with exit 1, measured on a clone of `tests/fixtures/golden/minimal-skill`.
+
+Stated precisely, because the two CLIs report differently and one of them is not finished:
+
+| Surface | Operator findings are... |
+|---|---|
+| `check.mjs` tier, `errorCount`, `warnCount`, exit code | excluded; printed in their own labelled block ahead of the findings |
+| `check.mjs --json` | kept in `findings` with `operator: true`, counted separately in `operatorErrorCount`; the block goes to stderr so stdout stays one document |
+| `check.mjs --gha` | annotated first, labelled "operator problem" |
+| `evaluate.mjs` tier and exit code | excluded; the finding is printed with an `[operator/...]` label |
+| `evaluate.mjs` `summary.errors` and `dispositions.realIssues` | **still counted**, so an unloadable config adds 1 to both. Tracked as a follow-up: separating it needs a sixth disposition bucket, and the five are a documented partition that consumers sum (ADR 0044). |
+| `--sarif` | emitted as an ordinary result at level `error` with `ruleId: "config"`, unlabelled. Also a follow-up. |
 
 - **`mode`** (default `"local"`): `"local"` or `"published-verdict"`. See [Published-verdict mode](#published-verdict-mode).
 - **`profile`** (default `"askit-library"`): a named profile. See [Profiles](#profiles).

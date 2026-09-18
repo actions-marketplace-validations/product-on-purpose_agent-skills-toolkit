@@ -69,13 +69,14 @@ function withLooseSkills(fn) {
   });
 }
 
-function runCli(args) {
+function runCliScript(script, args) {
   try {
-    return { code: 0, stdout: execFileSync(process.execPath, [path.join(ROOT, "scripts/check.mjs"), ...args], { encoding: "utf8" }) };
+    return { code: 0, stdout: execFileSync(process.execPath, [path.join(ROOT, script), ...args], { encoding: "utf8" }), stderr: "" };
   } catch (e) {
     return { code: e.status ?? 1, stdout: String(e.stdout ?? ""), stderr: String(e.stderr ?? "") };
   }
 }
+const runCli = (args) => runCliScript("scripts/check.mjs", args);
 
 const BROKEN_JSON = '{ "profile": "plain-plugin",\n';
 
@@ -158,8 +159,14 @@ test("F-011: the operator block prints first, in its own vocabulary, and the fin
     const out = runCli([dir]);
     assert.equal(out.code, 2);
     assert.ok(out.stdout.indexOf("YOUR GRADER CONFIGURATION") >= 0, "the block reaches the terminal");
+    // Compared against the FIRST FINDING LINE, not the "Tier:" line. minimal-skill prints above-tier
+    // findings before its tier line, so anchoring on "Tier:" would let the block sink below the wall of
+    // findings it exists to explain and still pass.
+    const blockAt = out.stdout.indexOf("YOUR GRADER CONFIGURATION");
+    const firstFindingAt = out.stdout.indexOf("  [error/");
+    assert.ok(firstFindingAt >= 0, "this fixture prints findings, so there is a wall to be ahead of");
     assert.ok(
-      out.stdout.indexOf("YOUR GRADER CONFIGURATION") < out.stdout.indexOf("Tier:"),
+      blockAt < firstFindingAt,
       "it is the reader's frame for the grade, so it leads - learning it after the verdict is the same defect with extra steps"
     );
   });
@@ -228,6 +235,34 @@ test("F-037: the hint never fires for a plugin that HAS a library.json, readable
   // would be a false statement to its author. U1 already reports that case.
   assert.equal(hintsFor({ library: { data: null, parseError: "Unexpected token" } }, def).length, 0);
   assert.equal(hintsFor({ library: { data: null, parseError: null } }, def).length, 1);
+});
+
+// --- F-011, the second surface: evaluate.mjs must not disagree with check.mjs -----------------------
+
+test("F-011: evaluate.mjs returns the SAME exit code as check.mjs for the same directory", () => {
+  withMinimalPlugin((dir) => {
+    const clean = { check: runCliScript("scripts/check.mjs", [dir]).code, evaluate: runCliScript("scripts/evaluate.mjs", [dir]).code };
+    assert.deepEqual(clean, { check: 0, evaluate: 0 }, "the control: a clean plugin passes both");
+
+    writeFileSync(path.join(dir, CONFIG_FILENAME), BROKEN_JSON);
+    const broken = { check: runCliScript("scripts/check.mjs", [dir]).code, evaluate: runCliScript("scripts/evaluate.mjs", [dir]).code };
+    // Two CLIs describing one directory in contradictory terms is the defect ADR 0036 / F-032 exists to
+    // prevent. Leaving the operator finding in evaluate's gate filter produced it outright: evaluate
+    // printed "Tier: universal" (its tier comes through the fixed computeTierReport) beside exit 1, with
+    // no universal conformance error in its own list to justify that exit.
+    assert.deepEqual(broken, { check: 2, evaluate: 2 }, "a broken rubric is an operator error in BOTH");
+  });
+});
+
+test("F-011: evaluate.mjs labels the operator finding instead of listing it as a conformance defect", () => {
+  withMinimalPlugin((dir) => {
+    writeFileSync(path.join(dir, CONFIG_FILENAME), BROKEN_JSON);
+    const out = runCliScript("scripts/evaluate.mjs", [dir]);
+    assert.match(out.stdout, /\[operator\/error\] askit\.config\.json is present but not valid JSON/);
+    assert.match(out.stdout, /not the plugin; it does not affect the tier/);
+    assert.ok(!/\[error\] config:/.test(out.stdout), "never in the same stream and vocabulary as U1 and G4");
+    assert.match(out.stdout, /^Tier: universal$/m, "and the tier it reports is the plugin's, unmoved");
+  });
 });
 
 test("F-037: the repository's own gate output is untouched by the hint", () => {

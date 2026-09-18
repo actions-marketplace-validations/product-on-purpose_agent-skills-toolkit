@@ -13,7 +13,7 @@ import { PROFILES } from "./lib/profiles.mjs";
 import { resolveFindings } from "./lib/resolve-config.mjs";
 import { computeTierReport } from "./tier-report.mjs";
 import { checkAgentskills } from "./checks/agentskills.mjs";
-import { finding, SEVERITY } from "./lib/findings.mjs";
+import { finding, SEVERITY, isOperatorFinding } from "./lib/findings.mjs";
 import { readJsonSafe, SKIP_DIRS, normalizeArgPath } from "./lib/fs-utils.mjs";
 import { gateExitFromFindings } from "./check.mjs";
 
@@ -148,6 +148,13 @@ export function formatReport(r) {
   lines.push(`Evaluating (${r.scope}): ${r.target}`);
   for (const f of r.findings) {
     if (f.suppressed || effSev(f) === "off") continue; // disabled/waived findings are summarized in the split, not listed here
+    // F-011: an operator finding is about askit.config.json, the grader's rubric file. It is labelled
+    // here for the same reason check.mjs gives it its own block: printed as `[error] config: ...` in the
+    // same stream as U1 and G4, it reads as a conformance defect of the plugin, which it is not.
+    if (isOperatorFinding(f)) {
+      lines.push(`  [operator/${effSev(f)}] ${f.message} (your grader configuration, not the plugin; it does not affect the tier)${f.file ? "  -> " + f.file : ""}`);
+      continue;
+    }
     lines.push(`  [${effSev(f)}] ${f.reqId ?? f.check}: ${f.message}${f.clampNotice && !f.trustNotice ? " [clamped to warn: published-verdict]" : ""}${f.trustNotice ? ` [${f.trustNotice}]` : ""}${f.migrationNotice ? ` [${f.migrationNotice}]` : ""}${f.file ? "  -> " + f.file : ""}`);
   }
   if (r.tier !== undefined) lines.push(`Tier: ${r.tier}`);
@@ -349,6 +356,22 @@ async function runCli() {
   } else {
     const forGate = r.findings.filter((f) => !f.suppressed).map((f) => ({ ...f, severity: effSev(f) }));
     ({ exitCode } = gateExitFromFindings(forGate, declared));
+    // F-011, and the SAME rule check.mjs applies, because two CLIs disagreeing about one directory is
+    // the defect. An operator finding carries a null reqId, which tierForReq buckets as `universal`, so
+    // a trailing comma in askit.config.json gated above as though it were a Universal conformance
+    // failure. Once computeTierReport stopped counting it toward the tier, that produced the
+    // contradiction outright: `Tier: universal` printed beside exit 1, with no universal conformance
+    // error in the list to justify it (measured on a clone of golden/minimal-skill).
+    //
+    // The correction is this ONE line and deliberately not also a filter on `forGate` above. A filter
+    // there would be unreachable: it can only ever remove an error-severity operator finding, and
+    // whenever one of those exists this line overrides the result anyway, so no input reaches the gate
+    // differently because of it. An unreachable guard is a false claim about what is protecting you -
+    // it cannot be shown failing, so it is not written.
+    //
+    // Exit 2, not 0: excluding the finding from the GRADE must not make a broken rubric read green,
+    // which would be a clean verdict computed against a rubric nobody selected.
+    if (r.findings.some((f) => isOperatorFinding(f) && effSev(f) === "error" && !f.suppressed)) exitCode = 2;
   }
 
   let output;
