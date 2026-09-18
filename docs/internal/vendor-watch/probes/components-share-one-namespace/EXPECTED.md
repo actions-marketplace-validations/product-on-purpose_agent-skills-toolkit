@@ -207,3 +207,17 @@ here:
 
 Evidence for both runs was captured headlessly and the fixtures were removed afterwards
 (`claude plugin marketplace remove askit-probe-fixtures`, verified with `claude plugin list`).
+
+
+## RESOLVED the same day by [ADR 0060](../../decisions/0060-a-runtime-that-refuses-a-collision-downgrades-the-check-it-does-not-retire-it.md)
+
+**The section above is preserved exactly as written, including its statement that `verifiedOn` is NOT advanced.** That was true at the moment of the reading and is the honest record of it: the claim had failed and nothing had yet decided what the failure meant. Rewriting it now would erase the gap between observing a change and ruling on it, and that gap is what this whole mechanism exists to hold open.
+
+**What changed after it.** ADR 0060 ruled the change a **DOWNGRADE, not the retirement** that `onChange` and ADR 0051 anticipated:
+
+- `marketplace-skill-collision` and `marketplace-command-collision` go `error` to `warn`.
+- Their message stops claiming *which one wins is undefined*, because nothing wins.
+- Both keep `reqId: null` and stay off the spine. ADR 0051's unilateral-remedy test is untouched by a severity change.
+- The claim text is rewritten to the measured behaviour and **`verifiedOn` advances to 2026-09-17** - on the strength of the reproduction actually run that day, not to clear the wall. The wall is what forced the ADR instead of a silent renewal.
+
+**Blast radius measured, not argued.** The real `agent-plugins` catalogue was graded before and after the change: **byte-identical**. Three collection errors both times, all `marketplace-version-agreement`, zero collection warnings, verdict RED. No catalogue in the family currently has a skill or command collision, so this change is preventive and has never fired in anger. That is exactly why the severity is pinned by a unit test proven able to fail in both directions - restoring `SEVERITY.ERROR` fails it, and restoring the *shared pool / which one wins is undefined* wording fails it - rather than left for a catalogue to catch.
