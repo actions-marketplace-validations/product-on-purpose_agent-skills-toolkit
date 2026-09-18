@@ -1,0 +1,11 @@
+{
+  "name": "stale-state-pre-fix-fixture",
+  "private": true,
+  "version": "0.0.0",
+  "_why": "The `scripts` block is this repository's own, captured at fabb38a. It is the TRUTH half of the fixture: the `test` chain runs three check scripts and does not run check-release-counts, which is what makes the captured sentence in docs/internal/backlog/enhancements.md false. Keep `release-counts` present as its own script - the point is not that the script is unknown, it is that it is wired somewhere other than where the prose says.",
+  "scripts": {
+    "test": "node scripts/check-readme-version.mjs . && node scripts/check-doc-enumerations.mjs . && node scripts/check-claim-citations.mjs . && node --test",
+    "release-counts": "node scripts/check-release-counts.mjs .",
+    "action-pin-watch": "node scripts/action-pin-watch.mjs ."
+  }
+}

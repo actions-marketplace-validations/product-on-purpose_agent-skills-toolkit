@@ -64,7 +64,7 @@
     "STANDARD.md"
   ],
   "scripts": {
-    "test": "node scripts/check-readme-version.mjs . && node scripts/check-doc-enumerations.mjs . && node scripts/check-claim-citations.mjs . && node --test",
+    "test": "node scripts/check-readme-version.mjs . && node scripts/check-doc-enumerations.mjs . && node scripts/check-claim-citations.mjs . && node scripts/check-stale-state.mjs . && node --test",
     "check": "node scripts/check.mjs",
     "tier-report": "node scripts/tier-report.mjs",
     "evaluate": "node scripts/evaluate.mjs",
@@ -74,6 +74,7 @@
     "action-pin-watch": "node scripts/action-pin-watch.mjs .",
     "release-counts": "node scripts/check-release-counts.mjs .",
     "doc-enumerations": "node scripts/check-doc-enumerations.mjs .",
+    "stale-state": "node scripts/check-stale-state.mjs .",
     "doc-style": "node scripts/doc-style-report.mjs .",
     "release-ready": "node scripts/release-ready.mjs",
     "prepublishOnly": "npm test && node scripts/check.mjs"
