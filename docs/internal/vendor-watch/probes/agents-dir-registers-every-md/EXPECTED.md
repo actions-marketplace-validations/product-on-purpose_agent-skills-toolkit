@@ -91,3 +91,23 @@ Component inventory
 ```
 
 **Three of four, the same three.** `README.md` and `_README.md` both registered; `README.txt` did not. The underscore prefix still protects nothing, and only the non-`.md` extension is skipped. `verifiedOn` advances to 2026-08-24.
+
+## 2026-09-17: re-run, unchanged, on a runtime 37 versions newer
+
+Instrument: `claude plugin details probe-agents-scan`, on **Claude Code 2.1.275** (the 2026-08-24 run
+was on 2.1.238-era tooling).
+
+```
+Component inventory
+  Skills (0)
+  Agents (3)  README, real-agent, _README
+```
+
+**Three of four, the same three.** `README.md` and `_README.md` both registered; `README.txt` did not.
+The underscore prefix still protects nothing, and only the non-`.md` extension is skipped. `U15`
+(agents-dir-registerable) keeps its vendor grounding and `G8`'s exemption of `agents/` from the
+folder-README requirement is still load-bearing. `verifiedOn` advances to 2026-09-17.
+
+**Run early, deliberately.** The blocking date was 2026-09-24 and this was run on 2026-09-17 at the
+maintainer's instruction, which costs roughly six days of the next window. Recorded so the short cycle
+is not later mistaken for a drifting clock.

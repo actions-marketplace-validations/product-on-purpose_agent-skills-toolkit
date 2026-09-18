@@ -148,10 +148,25 @@ export function commandCollisions(members) {
 }
 
 /**
- * The shared collision engine. Component names enter a SHARED POOL on any agent that does not namespace
- * by plugin, which is the same reasoning that motivates `S2` (prefix) inside a single plugin, applied
- * one level up. Each member grades clean in isolation; the collision only exists in the union, which is
- * exactly the class of defect a per-plugin loop cannot see.
+ * The shared collision engine. Each member grades clean in isolation; the collision only exists in the
+ * union, which is exactly the class of defect a per-plugin loop cannot see. That part is unchanged and
+ * is the same reasoning that motivates `S2` (prefix) inside a single plugin, applied one level up.
+ *
+ * WARN, not ERROR, since [ADR 0060]. The probe this rested on - `components-share-one-namespace` -
+ * CHANGED when it was re-run on 2026-09-17 against Claude Code 2.1.275. For three prior runs a colliding
+ * bare name resolved silently to one side. It now REFUSES:
+ *
+ *   <tool_use_error>Unknown skill: probe-duplicate. Several skills match that name:
+ *   probe-collision-a:probe-duplicate, probe-collision-b:probe-duplicate - invoke one by its full name.
+ *
+ * So the harm this check was written for - the wrong component silently winning - is gone on Claude
+ * Code, and the message must not keep asserting it. What remains is real but smaller and LOUD: the bare
+ * name becomes unusable for every consumer who installs both members. That is a warn.
+ *
+ * NOT retired, although ADR 0051 and the ledger's `onChange` both say a namespacing runtime should
+ * retire these. Two reasons, both in ADR 0060: the claim is conditional on the agent and only CLAUDE
+ * CODE was measured - Codex is the other target this project emits for and is untested - and a refusal
+ * is a different harm rather than no harm.
  */
 function collisionsOver(members, pick, check, label, dirLabel) {
   const owners = new Map();
@@ -166,8 +181,8 @@ function collisionsOver(members, pick, check, label, dirLabel) {
   for (const [name, holders] of [...owners.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
     if (holders.length < 2) continue;
     out.push(mkFinding(
-      check, SEVERITY.ERROR,
-      `${holders.length} members ship the ${label} "${name}" (${holders.join(", ")}); on any agent that does not namespace components by plugin they occupy one name in a shared pool, and which one wins is undefined`,
+      check, SEVERITY.WARN,
+      `${holders.length} members ship the ${label} "${name}" (${holders.join(", ")}); a consumer who installs both cannot use the bare name - Claude Code 2.1.275 refuses it and requires the plugin-qualified name (measured 2026-09-17, ADR 0060). Resolution on Codex is unmeasured`,
       `${dirLabel}${name}`,
     ));
   }
