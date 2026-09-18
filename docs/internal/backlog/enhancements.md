@@ -859,3 +859,49 @@ context. That is not primarily a discipline failure, and reading it as one would
 `critique-forms` is the next skill it builds and will be built through `askit-build-skill` in
 fallback mode, with `askit-evaluate` run against the trigger eval sets, which that repository
 records as never having been through a grader. Friction from that build lands here as it occurs.
+
+## House-clause open questions (2026-09-18)
+
+Opened by the B-09 pass, which corrected five check overclaims after reproducing each. Two of B-09's
+named targets, `G1` and `G3`, turned out not to be check overclaims at all: both describe what they
+measure accurately, and it is `STANDARD.md`'s clauses for those two items that promise more than the
+checks look for. Correcting a check's wording cannot close either one, because the mismatch is between the Standard
+and the spine.
+
+**These are OPEN QUESTIONS, not rulings.** Whether the clause weakens or the check strengthens is the
+maintainer's call, and nothing here recommends either. They carry `HC-` numbers rather than `E-` numbers
+because they ask what a house clause should say rather than propose a change to a component. The series
+starts at 07 and 08 because [`docs/reference/standard-coverage.md`](../../reference/standard-coverage.md)
+and [`audit-intake.md`](../audit-intake.md) already cite those two numbers, and a reference a published
+page carries has to resolve to something.
+
+### HC-07 - `G3`'s clause promises CI execution the check never looks for  [open question, ADR-gated]
+
+- **The clause:** `STANDARD.md` sec 2.6 `G3` - "Each chain contract and each hook has at least one
+  eval/regression case; **CI executes them**; a regression check confirms that changing one component
+  does not silently break a chained consumer or a hook. The bar is structural + behavioral *presence and
+  execution*."
+- **What the check does:** `G3` verifies that an eval set under `evals/` declares each chain edge and
+  each hook event, plus the stale-edge signal. **Nothing executes a case**, in this repository or in a
+  graded plugin. Recorded on the sec 8.3 row of
+  [`docs/reference/standard-coverage.md`](../../reference/standard-coverage.md).
+- **The open question:** does `G3`'s clause drop "CI executes them" and "execution", or does the check
+  gain a way to observe a run? Both are Standard-affecting and neither is ruled.
+- **Not a check defect.** `G3`'s own module text was tested during B-09 and found accurate; this is the
+  clause overreaching the check, not the check overclaiming.
+- **Status:** open (recorded 2026-09-18).
+
+### HC-08 - `G1`'s clause requires hook scope and failure behaviour the check never reads  [open question, ADR-gated]
+
+- **The clause:** `STANDARD.md` sec 2.6 `G1` - "Every hook present documents its event, trigger, matcher
+  (if applicable), **scope, and failure behavior** (3.5)." Sec 3.5's Rules line carries the same list:
+  "each hook MUST document its event, trigger, scope, and failure behavior."
+- **What the check does:** `hook-documentation.mjs` enforces a `type` per action and a `matcher` for the
+  tool-matched events. Its own docblock says the fuller scope/failure narrative "lives in the hook
+  component's docs" - it is not read. Recorded on the sec 3.5 row of
+  [`docs/reference/standard-coverage.md`](../../reference/standard-coverage.md).
+- **The open question:** does `G1`'s clause drop scope and failure behaviour, or does the check gain a
+  way to find them? A free-prose narrative is not obviously machine-checkable, which is what makes this
+  a question rather than a defect.
+- **Not a check defect.** `G1`'s own module text was tested during B-09 and found accurate.
+- **Status:** open (recorded 2026-09-18).

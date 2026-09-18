@@ -231,10 +231,13 @@ function targetHasEnumeratingManifest(target) {
   return false;
 }
 
-// Returns true when library.json declares at least one component entry, which is the precondition
-// G6 (deprecation) early-returns on: `if (!lib || typeof lib.components !== "object" ...) return []`
-// (checks/deprecation.mjs). Deliberately NOT "a deprecated entry exists": G6 validates the `status`
-// of EVERY entry, so an all-active plugin has had its statuses read and passed.
+// Returns true when library.json declares at least one component entry in any of its component lists.
+// That is STRICTER than G6's own early return, which is `if (!lib || typeof lib.components !== "object"
+// || lib.components === null) return []` (checks/deprecation.mjs:21) - object-ness, never entry count.
+// Measured 2026-09-18: a library.json carrying `"components": {}` makes this return false, so the report
+// says N/A, while deprecation.mjs does NOT early-return - it iterates an empty map and returns [].
+// Deliberately NOT "a deprecated entry exists": G6 validates the `status` of EVERY entry, so an
+// all-active plugin has had its statuses read and passed.
 function targetHasComponentEntries(target) {
   const components = readJsonSafe(path.join(target, "library.json")).data?.components;
   if (!components || typeof components !== "object" || Array.isArray(components)) return false;
@@ -243,9 +246,12 @@ function targetHasComponentEntries(target) {
 
 // Builds the set of reqIds that render N/A (not PASS) when no findings are present.
 //
-// N/A means exactly one thing: the check's own precondition was not met, so it returned before
-// examining anything. Every entry is therefore derived from the subject, against the SAME condition
-// the check module early-returns on - named per line below so the report and the check cannot drift.
+// N/A means the check had nothing of its own to examine. Every entry is derived from the subject on
+// disk and APPROXIMATES the check's not-applicable case; it is NOT the module's early-return expression,
+// and the two can diverge. Measured 2026-09-18: `"components": {}` puts G6 in this set while
+// deprecation.mjs does not early-return, and a `.mcp.json` holding `{"mcpServers": {}}` keeps U11 OUT of
+// it while mcp-valid.mjs returns early on `servers.length === 0`. Each line below says what is tested
+// here, which is the only thing the report can claim.
 //
 // This replaces a FIXED base set of G1, G6 and U11 "whose artifacts are always optional", which was
 // F-007 of the 2026-09-04 audit: those three were N/A on every subject, including one that has the
@@ -258,7 +264,9 @@ export function buildConditional(target) {
   // No subject: no precondition can be evaluated, so nothing may be reported as examined.
   if (!target) return new Set(["U11", "U12", "U13", "G1", "G6"]);
   const conditional = new Set();
-  // U11 (mcp-valid): "Conditional: no .mcp.json => not applicable" - the module's own docblock.
+  // U11 (mcp-valid): no .mcp.json on disk - the module's own docblock says "Conditional: no .mcp.json
+  // => not applicable". A PRESENT .mcp.json declaring no servers stays out of this set even though
+  // mcp-valid.mjs returns early on it; see the divergence noted above.
   if (!existsSync(path.join(target, ".mcp.json"))) conditional.add("U11");
   // U12 (mermaid-valid): no fenced mermaid block anywhere, so there is no diagram to parse.
   if (!targetHasMermaidBlocks(target)) conditional.add("U12");
@@ -266,7 +274,7 @@ export function buildConditional(target) {
   if (!targetHasEnumeratingManifest(target)) conditional.add("U13");
   // G1 (hook-documentation): `if (!isFile(hooksPath)) return []` - checks/hook-documentation.mjs.
   if (!existsSync(path.join(target, "hooks", "hooks.json"))) conditional.add("G1");
-  // G6 (deprecation): no component entry carries a `status` for it to read.
+  // G6 (deprecation): library.json declares no component entry, so there is no entry to read a `status` from.
   if (!targetHasComponentEntries(target)) conditional.add("G6");
   return conditional;
 }

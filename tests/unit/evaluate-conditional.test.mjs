@@ -87,8 +87,9 @@ test("evaluate + render: U13 renders PASS (not N/A) for silver-fixture which has
 // The 2026-09-04 audit's F-007: buildConditional carried a FIXED base set of G1, G6 and U11, so this
 // repository - which ships hooks/hooks.json and declares 35 components - rendered
 // `G1 hook-documentation | N/A | Nothing to validate for this subject (vacuous pass).` for a hook that
-// G1 had examined and passed. Each assertion below names the early return in the check module that IS
-// the precondition, so the report and the check cannot drift apart again.
+// G1 had examined and passed. Each assertion below names the condition buildConditional tests. That
+// condition APPROXIMATES the check module's not-applicable case and is not always the module's own
+// early-return expression; U11 and G6 below say where the two diverge.
 
 /** A throwaway plugin root; `files` maps a relative path to its contents. */
 function tempPlugin(files) {
@@ -124,7 +125,9 @@ test("buildConditional: does NOT include G1 when the subject ships hooks/hooks.j
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-// U11 (mcp-valid): the module's own docblock states the precondition - "Conditional: no .mcp.json => not applicable".
+// U11 (mcp-valid): the condition here is "no .mcp.json on disk", which the module's own docblock states as
+// "Conditional: no .mcp.json => not applicable". mcp-valid.mjs itself returns early on `servers.length === 0`,
+// so a PRESENT .mcp.json holding `{"mcpServers": {}}` renders PASS rather than N/A (measured 2026-09-18).
 test("buildConditional: includes U11 when the subject ships no .mcp.json", () => {
   const dir = tempPlugin({ "library.json": LIB_NO_COMPONENTS });
   try {
@@ -139,9 +142,11 @@ test("buildConditional: does NOT include U11 when the subject ships .mcp.json", 
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-// G6 (deprecation): the precondition is the MISSING components map (checks/deprecation.mjs:21), never
-// "no deprecated entry". G6 validates the `status` of EVERY entry, so an all-active plugin has had its
-// statuses examined; keying N/A on "no deprecated component" would reproduce F-007 one check over.
+// G6 (deprecation): the condition here is "no component entry in any list", which is STRICTER than
+// deprecation.mjs:21's own guard (a missing or non-object `components`): `"components": {}` is N/A here
+// while the check does NOT early-return (measured 2026-09-18). It is deliberately NOT "no deprecated
+// entry": G6 validates the `status` of EVERY entry, so an all-active plugin has had its statuses
+// examined; keying N/A on "no deprecated component" would reproduce F-007 one check over.
 test("buildConditional: includes G6 when library.json declares no component entries", () => {
   const dir = tempPlugin({ "library.json": LIB_NO_COMPONENTS });
   try {
