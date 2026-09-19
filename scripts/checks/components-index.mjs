@@ -1,5 +1,9 @@
 // what-it-is:   the components-index check (S3)
-// what-it-does: asserts each library.json components entry (path, version, status) matches the component on disk
+// what-it-does: asserts the library.json components index and disk list the same skills, subagents, commands and
+//               workflows, MATCHING BY NAME in both directions. It reads no entry's "path", "version" or
+//               "status": a declared version disagreeing with the component's frontmatter passes (reproduced
+//               2026-09-18). "status"/"tier" agreement with frontmatter is S8's; the path/version-agreement
+//               rule is ADR 0059's sec 5.1 ruling and is not written
 // why:          enforces the Standard requirement S3 deterministically, one module per reqId, so the gate stays model-free
 // used-by:      registered in scripts/lib/registry.mjs; run by scripts/check.mjs and tier-report.mjs
 import { finding, SEVERITY } from "../lib/findings.mjs";

@@ -504,14 +504,21 @@ function renderMarkdown(report, opts = {}) {
   out.push(mdTable(["Field", "Value"], metaRows));
   out.push("");
 
-  // 11 Per-check glossary (F4): every spine check explained in one line, from REPORT_META (zero model
+  // 11 Per-check glossary (F4): every spine check's WHY IT MATTERS in one line, from REPORT_META (zero model
   // tokens). Reference for the PASS/N/A rows the evidence ledger leaves unexplained; derived from m.rows
   // so it cannot diverge from the status matrix and adds no count.
+  //
+  // The column is "Why it matters", never "What it verifies". REPORT_META's own docblock calls these
+  // strings a "why it matters" (report-meta.mjs), and read as a statement of what the check verifies
+  // several are false: G2's says a consumer can "point to a green badge that says the standard held on
+  // the latest commit", which self-hosting.mjs cannot observe, and G3's speaks of "a tested guarantee"
+  // where library-regression.mjs verifies that an eval file declares the edge. The per-check "what it
+  // checks" statements live in docs/reference/{universal,silver,gold}-checks.md.
   out.push("## 11 Per-check glossary");
   out.push("");
-  out.push(`**Summary: what each of the ${m.counts.total} checks verifies, in one line. A plain-language reference for every PASS / FAIL / WARN / N/A row above.**`);
+  out.push(`**Summary: why each of the ${m.counts.total} checks matters, in one line. A plain-language reference for every PASS / FAIL / WARN / N/A row above. For what each check actually verifies, see the Standard and the checks reference.**`);
   out.push("");
-  out.push(mdTable(["Check", "Tier", "What it verifies"], m.rows.map((r) => [`${r.reqId} ${r.id}`, r.tierName, r.why])));
+  out.push(mdTable(["Check", "Tier", "Why it matters"], m.rows.map((r) => [`${r.reqId} ${r.id}`, r.tierName, r.why])));
   out.push("");
   out.push("The conformance layer is deterministic and reproducible: re-run `node scripts/check.mjs .` to reproduce every row above. This report adds no judgment and does not change the verdict.");
   out.push("");
@@ -806,7 +813,7 @@ function htmlGlossary(m) {
   const rows = m.rows
     .map((r) => `<tr><td><code>${escapeHtml(r.reqId)}</code> ${escapeHtml(r.id)}</td><td>${escapeHtml(r.tierName)}</td><td>${escapeHtml(r.why)}</td></tr>`)
     .join("");
-  return `<div class="tablecard glossary"><table><thead><tr><th style="width:200px">Check</th><th style="width:84px">Tier</th><th>What it verifies</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="tablecard glossary"><table><thead><tr><th style="width:200px">Check</th><th style="width:84px">Tier</th><th>Why it matters</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 // Release readiness band (release reports): a prominent go / no-go right after the masthead.
@@ -1035,7 +1042,7 @@ function renderHtml(report, opts = {}) {
       ${htmlSection("s08", "08", "Insights", insLead, insBody)}
       ${htmlSection("s09", "09", "Evidence and sources", "Citations grounding the findings: the check module, Standard clause, or subject file.", `<ul class="refs">${refItems.join("")}</ul>`)}
       ${htmlSection("s10", "10", "Report metadata", "Provenance for this evaluation, plus the legend.", metaBody)}
-      ${htmlSection("s11", "11", "Per-check glossary", `What each of the ${m.counts.total} checks verifies, in one line - a plain-language reference for every row above.`, htmlGlossary(m))}
+      ${htmlSection("s11", "11", "Per-check glossary", `Why each of the ${m.counts.total} checks matters, in one line - a plain-language reference for every row above. For what each check actually verifies, see the Standard and the checks reference.`, htmlGlossary(m))}
     </div>
   </main>
 </div>

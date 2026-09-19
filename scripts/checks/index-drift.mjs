@@ -30,7 +30,8 @@ const norm = (s) => s.replace(/\r\n/g, "\n").replace(/\s+$/, "");
 /**
  * G4 (Gold): INDEX.md is generated from library.json + component frontmatter (gen-index) and
  * drift-checked - a hand-edited generated INDEX is an error (Standard sec 2.6 G4). The native
- * manifests and manifest.generated.json are already drift-checked by U8; this adds INDEX.
+ * manifests' name and version are compared against library.json by U8; manifest.generated.json is
+ * drift-checked by nothing in the spine. This adds INDEX.
  * Advanced tier, so it is a Gold burndown item until the plugin declares advanced.
  */
 export function check(ctx) {
