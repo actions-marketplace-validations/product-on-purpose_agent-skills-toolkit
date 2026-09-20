@@ -28,7 +28,7 @@
 // scope:        DELIBERATELY WIDER THAN THE MEASURED HOLE, and the widening is a decision rather than
 //               an accident. The hole was two spine fields; the guard compares the whole generated
 //               document, so a skill or command description that drifted from its frontmatter, a
-//               component added to library.json without regenerating, and an mcpServers entry are all
+//               component added ON DISK without regenerating, and an mcpServers entry are all
 //               caught too. That is affordable precisely because the file is GENERATED: the invariant
 //               is not "these fields agree" but "this file is what the generator produces", which is
 //               the same invariant `U8` asserts for the native manifests, and the repair is always the
@@ -38,7 +38,9 @@
 //               already compares every `components` entry's declared version in library.json against
 //               that component's own frontmatter, runs in `npm test`, and was measured on 2026-09-19 to
 //               fail on a drifted SKILL (1 failure) and on a drifted skill, subagent and command
-//               together (3 failures, all three named in the message). It also fails rather than skips
+//               together (ONE failing test, all three named in its message - not three failures; the
+//               suite reads 1671 / 1666 pass / 1 fail either way, identical to the single-drift case).
+//               It also fails rather than skips
 //               when a component's frontmatter version cannot be read, and carries a non-vacuity test.
 //               What is uncovered on that surface is the GATE - `S3` (components-index) matches by name
 //               only, so a third-party plugin's grade does not move on a version drift - and `S3` is a
