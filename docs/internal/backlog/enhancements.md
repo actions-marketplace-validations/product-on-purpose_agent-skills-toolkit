@@ -905,3 +905,35 @@ page carries has to resolve to something.
   a question rather than a defect.
 - **Not a check defect.** `G1`'s own module text was tested during B-09 and found accurate.
 - **Status:** open (recorded 2026-09-18).
+
+### E67 - the Standard REQUIRES a co-located `HISTORY.md` per component at Silver+, this repo is Gold with 35 components and zero of them, and nothing catches it  [honesty, effort M]
+
+- **Target:** `STANDARD.md` sec 2.5 and sec 3.10, or a new check. Which one is the decision.
+- **Measured 2026-09-19, five facts, each run rather than read:**
+  - `STANDARD.md:318` - "Each component MUST carry its current `version` ... and MUST maintain dated change notes in a **co-located history file** (`HISTORY.md` beside the component) **at Silver and above**". `STANDARD.md:199` says the same: "REQUIRED at Silver+".
+  - `library.json` declares `tier: advanced`, which is above Silver.
+  - The repository declares **35 components**: 26 skills, 7 subagents, 2 commands.
+  - `find . -name 'HISTORY.md'` outside `node_modules`, `_local` and `.git` returns **0**. No alternative history-shaped file exists beside any component either.
+  - `node scripts/check.mjs .` reports **Tier: Advanced, 0 errors, 0 warnings**.
+- **So the toolkit fails its own Standard 35 times and its own gate says it is Gold.** This is E61's finding (the tier certifies file shape) turned on the grader itself, and it is worse than E61's case in one respect: E61's Potemkin plugin was a constructed fixture, and this is the repository the badge is published for.
+- **Two sentences in the Standard claim the opposite, and both are false.** `STANDARD.md:199` carries "(tooling enforces agreement when present)" and `:318` carries "(tooling enforces this)". **No module under `scripts/checks/` reads a component `HISTORY.md` at all** - `grep -rln 'HISTORY' scripts/checks/` returns nothing, so there is no cap, no migration window and no partial coverage to qualify. The three `scripts/` hits for "HISTORY" are `check-readme-version`, `check-stale-state` and `gen-standard-coverage`, and all three mean CHANGELOG-class historical records, not a component's history file. That was checked rather than assumed, because the filename collision makes a grep look like coverage.
+- **The decision, which is NOT made here.** Three routes and they are not equal:
+  1. **Write 35 `HISTORY.md` files and add a check.** Honest, and the check is a Standard tightening needing a revision - Standard 0.18 at the earliest, since 0.17 is graduations-only.
+  2. **Demote the clause to SHOULD** and delete both false parentheticals. Cheapest, and it is what the repository's own practice has been saying for its entire life.
+  3. **Keep the MUST and mark it a stated gap**, per ADR 0059's third disposition, deleting the parentheticals either way.
+- **The parentheticals should be deleted regardless of which route is taken**, under the standing rule that a false claim is removed before surface area is added. That half needs no revision - it removes a promise rather than making one.
+- **Found while verifying somebody else's claim, which is the part worth recording.** A triage agent asserted the Standard carries "three false tooling parentheticals" in its gap rows. Checking that found two parentheticals of that shape (`:199`, `:318`) and one clause of a different shape (`:519`, "Tooling MUST warn when it detects a plugin embedding a self-listing marketplace"), so the count was wrong. Verifying the two that were real is what surfaced the 35-component violation behind them. The triage's other claims did not survive review and the triage was discarded; this entry is the one durable thing it led to.
+
+### E68 - `resolve-bash` leaks a probe directory on force-kill at ~3 percent, and the obvious cause is ruled out  [correctness, effort M]
+
+- **Target:** `tests/unit/_resolve-bash.mjs`, the `finally` block around line 573.
+- **Measured 2026-09-19, not inferred:** 30 runs of `tests/unit/resolve-bash.test.mjs` gave 29 pass, 1 fail. A second independent 40-run loop failed on run 12; a third failed on run 7. Call it 3 percent, one run in thirty.
+- **The failing assertion, captured verbatim rather than described:**
+  `not ok 6 - write-then-hang: a candidate that produces correct output but then hangs is rejected within a bounded time, and its process tree is actually killed`
+  `the probe directory must be removed even when the candidate had to be force-killed; leaked: ["askit-bash-probe-8rd9nq"]`
+- **It is NOT a timeout, and three separate reviews said it was.** Each called it "a wall-clock timing assertion, timing-sensitive, not chased" - an inference from the test's TITLE, which does contain a time bound. Nobody had captured a failing run. One loop-until-failure gave the real answer in twelve runs: the time bound passes and the CLEANUP assertion fails.
+- **The obvious cause is RULED OUT, by trying it.** The natural reading is a Windows handle race: the force-killed process has not released its handle when `rmSync` runs, and Windows refuses to remove a directory that still has one. `force: true` suppresses ENOENT and does not retry EBUSY, so `maxRetries: 10, retryDelay: 50` should fix it. **It does not.** With the retry in place, 30 runs gave 28 pass and 2 fail, and a capture on run 7 showed the SAME assertion and the same leak. The change was reverted; nothing of it is in the tree.
+- **What that leaves.** Something other than a retry-able busy handle keeps the directory alive, or recreates it, or the `finally` is not reached on that path. Candidates not yet tested: whether `rmSync` throws and the exception is swallowed, whether the killed tree recreates the directory after cleanup, and whether the leaked directory is even the one this `finally` owns - the test counts ALL `askit-bash-probe-*` entries in `tmpdir()`, not one path.
+- **Why it matters beyond the suite.** The same `finally` runs in production when the toolkit force-kills a hung bash candidate, so this is a real temp-directory leak, not only a test annoyance. It is small and self-limiting, which is why this is effort M and not a stop-the-line item.
+- **It is invisible to CI.** The test is Windows-only and skips on the Linux legs, so only a local Windows run can see it. That is also why it survived this long.
+- **The honest stopping point.** Two diagnoses were attempted and one was falsified by measurement. This repository's own rule is that after three attempts the problem is ill-posed; a third guess without a new instrument would be the wrong move. The next person should start by making `rmSync` report rather than by proposing a fix.
