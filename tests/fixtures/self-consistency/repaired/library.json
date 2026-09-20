@@ -1,0 +1,22 @@
+{
+  "name": "fx-self-consistency",
+  "version": "1.19.0",
+  "description": "A minimal plugin tree whose manifest.generated.json carries the drift measured on main at 3ee7170 on 2026-09-19: version 9.9.9 and standard 0.01 against a library.json reading 1.19.0 and 0.16.",
+  "standard": "0.16",
+  "tier": "advanced",
+  "license": "Apache-2.0",
+  "keywords": [
+    "fixture"
+  ],
+  "components": {
+    "skills": [
+      {
+        "name": "fx-demo",
+        "path": "skills/fx-demo/SKILL.md",
+        "version": "0.1.0",
+        "tier": "universal",
+        "status": "active"
+      }
+    ]
+  }
+}
