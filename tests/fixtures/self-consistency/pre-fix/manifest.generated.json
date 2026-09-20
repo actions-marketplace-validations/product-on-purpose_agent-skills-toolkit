@@ -1,0 +1,14 @@
+{
+  "name": "fx-self-consistency",
+  "version": "9.9.9",
+  "tier": "advanced",
+  "standard": "0.01",
+  "skills": [
+    {
+      "name": "fx-demo",
+      "path": "skills/fx-demo/SKILL.md",
+      "description": "A fixture skill that exists so the re-derived manifest has a component list to compare. Use only from tests/unit/self-consistency.test.mjs."
+    }
+  ],
+  "commands": []
+}
