@@ -22,8 +22,8 @@
 //               sync-agents-md emits a `<!-- generated:components -->` block, and this repository's
 //               AGENTS.md contains ZERO occurrences of that marker, so nothing here is generated into
 //               it and there is nothing to drift-check. The `U8`/`G4` docblocks used to imply this file
-//               was covered; PR #334 corrected that text, which made it honestly documented as
-//               ungoverned without governing it.
+//               was covered; PR #334 (checks state what they measure) corrected that text, which made
+//               it honestly documented as ungoverned without governing it.
 // used-by:      npm test, npm run self-consistency, tests/unit/self-consistency.test.mjs
 // scope:        DELIBERATELY WIDER THAN THE MEASURED HOLE, and the widening is a decision rather than
 //               an accident. The hole was two spine fields; the guard compares the whole generated
