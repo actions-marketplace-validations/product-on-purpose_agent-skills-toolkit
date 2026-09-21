@@ -170,7 +170,7 @@ jobs:
       # this comment block executes a single byte of it. ---
 
       - name: Checkout main (the trust root - branch protection governs this tree, not the candidate's)
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: main
           path: trust-root
@@ -232,7 +232,7 @@ jobs:
       # any candidate-controlled code run. ---
 
       - name: Checkout the proven candidate commit
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ steps.resolve-tag.outputs.sha }}
           path: candidate
@@ -367,7 +367,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout the commit prepare validated
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.sha }}
 

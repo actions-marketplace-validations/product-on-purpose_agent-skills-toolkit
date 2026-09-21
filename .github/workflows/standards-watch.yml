@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       # scripts/standards-watch.mjs imports only node builtins and local modules, so there is nothing to
       # install and no node_modules for a cache to hold. Same reasoning as vendor-watch's job.

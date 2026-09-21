@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 55
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Node from .nvmrc (the committed pin is the single CI source of truth)
         uses: actions/setup-node@v7
