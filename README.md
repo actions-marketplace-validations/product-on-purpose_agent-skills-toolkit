@@ -430,7 +430,7 @@ Two Gold checks are worth naming. `G1` (hooks) grades the toolkit's own demonstr
 
 Install from the `product-on-purpose` marketplace (see [Install](#install)).
 
-- **Version** - `1.19.0` (Standard `v0.16`).
+- **Version** - `1.19.0` (Standard `v0.17`).
 - **Tier** - Advanced (Gold), self-validated. *This tier reports structural conformance to a written Standard - deterministic and reproducible; it is not a content review, a safety audit, or a statement that the skills work.* See [what a tier does not certify](docs/explanation/limitations.md).
 - **Install** - `product-on-purpose` marketplace (`agent-plugins`).
 - **Components** - 26 skills, 7 subagents, 2 commands.
