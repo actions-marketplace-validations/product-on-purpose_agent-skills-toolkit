@@ -40,7 +40,7 @@ jobs:
       # v1.14.0 already three majors behind, and Dependabot does not report the drift: it stopped proposing
       # `actions/checkout` at v7 when PR #159 was closed in favour of the hand-written #179, so nothing has
       # flagged this pin since. Whoever edits this job is the only check on it.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       # setup-node v5 added automatic caching whenever `packageManager` is set in package.json (this
       # repository does not set it) and v6 narrowed that to npm; v7 is an ESM rewrite. None of it reaches

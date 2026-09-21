@@ -36,7 +36,7 @@ jobs:
         node: [22.12.0, 24]
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Node ${{ matrix.node }}
         uses: actions/setup-node@v7
@@ -93,7 +93,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Node 24
         uses: actions/setup-node@v7
@@ -123,7 +123,7 @@ jobs:
         working-directory: site
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Node from .nvmrc (pin 24; the committed pin is the single CI source of truth)
         uses: actions/setup-node@v7
@@ -188,7 +188,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Node 24
         uses: actions/setup-node@v7
@@ -278,7 +278,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       # `uses: ./` - the working tree's action.yml, so this PR's Action is the one under test.
       - name: Grade through the working-tree Action
@@ -321,7 +321,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Grade through the Action as published on main
         id: gate

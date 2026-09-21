@@ -113,7 +113,7 @@ jobs:
       # nothing about a dispatch executing an older revision of this file, which does not contain this
       # line. Non-main deployment is refused by the `github-pages` environment policy, not here.
       - name: Checkout main
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           ref: main
       - name: Setup Node from .nvmrc (pin 24; the committed pin is the single CI source of truth)
