@@ -6,19 +6,25 @@
 > technical history), and `docs/internal/release-plans/` (the per-release spec + implementation
 > packets). Do not add accretive per-release paragraphs here; append them to those instead.
 >
-> Last updated: 2026-08-28 (v1.17.0 fully shipped through the approval-gated publish path, first tag to do so).
+> Last updated: 2026-09-17 (the plan moved into the repository as [`roadmap.md`](roadmap.md), and this
+> page's npm-ownership paragraph was corrected against a live reading).
+>
+> **This page is the STATE. The PLAN is [`roadmap.md`](roadmap.md)** (added 2026-09-17): what is open,
+> what each open item depends on, what "done" means for it with its acceptance criteria quoted
+> verbatim, and which cuts are sequenced behind which blocker. Before that page existed, the work was
+> steered from two documents that live only on one machine.
 
 ## Current state
 
 | Fact | Value |
 |---|---|
-| Version | **1.18.0, CUT 2026-09-03, tag and publish pending.** "Reach, second act" - cut 2 of the resolution plan. Merged as [PR #297](https://github.com/product-on-purpose/agent-skills-toolkit/pull/297) at `167fdbc`; five items (RS-D1 self-consume the Action, RS-D3 published verdicts and deploy-generated registry, RS-F3 standards-watch cron, RS-E3 tier-scope routing, plus E57 out of band). The Action is renamed **Agent Skills Toolkit Grader** and documented for the first time. `release-ready` now runs **six** gates. Live site verified serving the new reports at `167fdbc`. **RS-D2 (Marketplace listing) is DONE 2026-09-03**, closing the last open item of cut 2: [agent-skills-toolkit-grader](https://github.com/marketplace/actions/agent-skills-toolkit-grader), Code quality + Continuous integration, naming v1.18.0. The first opt-in was manual because there is no API for it; every later release is added automatically. Previously: **1.17.1, FULLY SHIPPED 2026-09-01.** The records patch, cut 1 of the resolution plan ratified 2026-08-31. Tagged `v1.17.1` at `4ba1ae6`, GitHub release **Latest**, npm `1.17.1` on `latest` with SLSA provenance, registry `agent-plugins` **1.73.0** via [PR #93](https://github.com/product-on-purpose/agent-plugins/pull/93) (prepared by `repin-watch`, issue #92 closed). All four manifests and the `action.yml` advertised pin read 1.17.1. Consumer-position verified: `npx agent-skills-toolkit@1.17.1` from a clean directory grades this repository Advanced 0/0. **Second exercise of the tag-triggered publish path and the first to reach the reviewer on its first try.** One defect found in the release path itself and filed as E57: `RELEASE-NOTES.md`'s heading shipped into the tag as a literal format placeholder, caught by `release.yml` AFTER the tag and publish rather than by `release-ready` before them; the npm tarball was unaffected (the file is not in `package.json`'s `files`). Previously: Previously: **1.17.0, FULLY SHIPPED 2026-08-28.** Tagged `v1.17.0` at `fd5286b`, GitHub release **Latest**, npm `1.17.0` on `latest` with SLSA provenance, registry `agent-plugins` **1.72.0** via [PR #91](https://github.com/product-on-purpose/agent-plugins/pull/91) (prepared by `repin-watch`, issue #90 auto-closed). All four manifests and the `action.yml` advertised pin read 1.17.0. **First tag through the approval-gated publish path**, which its first exercise also debugged: the `npm-publish` environment's branch policy admitted only `main` and rejected the tag before the reviewer gate; a `v*` type:tag policy was added and the rerun waited at the reviewer as designed. Consumer-position verified: `npx agent-skills-toolkit@1.17.0` from a clean directory grades this repository Advanced 0/0. Nothing outstanding. |
+| Version | **1.19.0 CUT 2026-09-17** - cut 4, "current with the vendors". Tag pushed from [PR #326](https://github.com/product-on-purpose/agent-skills-toolkit/pull/326); npm publish is a separate human approval and is NOT automatic. Its scope: the Codex re-read, the ledger's first Codex claim, the `G1` and `G2` tightenings ([PR #314](https://github.com/product-on-purpose/agent-skills-toolkit/pull/314)), the eight external-audit patches ([PR #315](https://github.com/product-on-purpose/agent-skills-toolkit/pull/315)), the `U6` root-relative fix ([PR #316](https://github.com/product-on-purpose/agent-skills-toolkit/pull/316)), `U18` plus the Claude Code re-survey and the Standard 0.16 bump ([PR #317](https://github.com/product-on-purpose/agent-skills-toolkit/pull/317)), and the vendor pin refresh ([PR #325](https://github.com/product-on-purpose/agent-skills-toolkit/pull/325)). The class is a **minor** (one new numbered check, two tightenings, a Standard revision). Per [ADR 0057](decisions/0057-unshipped-work-carries-a-name-never-a-version-number.md) the number was assigned at cut time and nowhere earlier. **Previously: 1.18.0 SHIPPED 2026-09-03** (tagged, published, listed on the GitHub Marketplace). **Cut 4 ("current with the vendors") is COMPLETE and unreleased on `main`**: the Codex re-read, the ledger's first Codex claim, the `G1` and `G2` tightenings ([PR #314](https://github.com/product-on-purpose/agent-skills-toolkit/pull/314)), the eight external-audit patches ([PR #315](https://github.com/product-on-purpose/agent-skills-toolkit/pull/315)), the `U6` root-relative fix ([PR #316](https://github.com/product-on-purpose/agent-skills-toolkit/pull/316)) and `U18` plus the Claude Code re-survey and the Standard 0.16 bump ([PR #317](https://github.com/product-on-purpose/agent-skills-toolkit/pull/317)). **No tag is cut.** Per [ADR 0057](decisions/0057-unshipped-work-carries-a-name-never-a-version-number.md) the next version number is assigned at cut time, not here; the class is a **minor** (one new numbered check, two tightenings, a Standard revision). |
 | Declared tier | Advanced (Gold) - `library.json` `tier: advanced` |
-| Standard pin | **0.15** |
-| Spine | 34 checks |
+| Standard pin | **0.17** |
+| Spine | 35 checks |
 | Scopes | 3 (plugin, component, marketplace) |
 | Skills | **26** |
-| Tests | **1487, 0 failures** (1 skipped; local suite run **2026-09-03**). It read **1446 at `4ba1ae6` (v1.17.1)**; of the thirty-nine added since, twelve are E57's, covering the RELEASE-NOTES section gate: the tagged-and-published tree captured as a fixture, its repaired twin, the extraction rules the awk used to hold, and the assertions that both callers stay wired to one implementation, six are RS-F3's, asserting that the new standards-watch schedule cannot quietly become an aspiration again, and nineteen are RS-D3's, over the deploy-time report publisher and the family-registry generator - the latter mostly about what happens when the network does not cooperate; and two are RS-E3's, pinning the tier-scope sentence across its five cut-2 placements. Earlier: **1439 at `fd5286b` (v1.17.0)**, **1399 at `1da4d16` (v1.16.1)** and **1359 at `9133014` (v1.15.0)**, each confirmed there by `npm run release-ready` exiting 0 on the release runner |
+| Tests | **1671, 0 failures** (1667 pass, 4 skipped; local suite run **2026-09-19**, MEASURED on this branch rather than summed). Up from 1506: twelve for the generated-manifest guard (`check-self-consistency`, which closes the one generated artifact in the tree that nothing compared against its source), fourteen for the self-proving work (seven pinning the evaluate report conditionals, seven guarding the generated Standard-to-check coverage table), twelve for the wiring-claim guard (`check-stale-state`, which found the backlog crediting a release-time gate with running on every pull request), sixteen for the CLI-truth fixes (a broken grader config is an operator error, and a plain plugin is told the profile exists), twenty-one for the post-publish registry assertion and the unified tag guard, eight for the 2026-09-04 audit evidence fixtures (three pinning the Potemkin Gold grade for E61 (the tier certifies file shape), five pinning what a Standard pin buys for E62 (the pin has no floor)), thirteen for `U18` (`command-size-cap`), five for the `U6` root-relative fix, one pinning the collision severity ADR 0060 downgraded, five for the `U5` calibration fixture, six for D-05 above-tier severity, and the rest from the eight audit patches - a symlink containment suite, two ReDoS timing assertions, a piped-stdout drain harness and a bin-help table reader. **Three of the four skips are the symlink cases**, which need a privilege Windows does not grant by default and run on the Linux legs in CI; the fourth is a POSIX-only path case. |
 | Self-proving | `node scripts/check.mjs .` exits 0 at Advanced, 0 errors, 0 warnings |
 
 ## v1.17.1 CUT 2026-09-01 - the records patch
@@ -362,7 +368,7 @@ how the runtime discovers subagents; sec 3.2 explains itself by reference to how
 skill. Claude Code says *"Custom commands have been merged into skills."* The 2026-08-10 internal audit had
 **already found this** and graded `S7` a CONFLICT. The evidence existed; nothing was re-reading it.
 
-`foundation/claims/vendor-claims.json` pins eight claims (6 quote, 2 probe) across four vendor pages, each carrying what
+`foundation/claims/vendor-claims.json` pins nine claims (7 quote, 2 probe) across four vendor pages, each carrying what
 depends on it and what to do when it fails. `npm run release-ready` re-checks them **inside `release.yml` and
 `publish-npm.yml`**, so a tag or a publish is blocked by a claim the vendor no longer makes; a monthly
 workflow opens an issue rather than editing anything. **Freshness blocks only what age can actually
@@ -463,9 +469,18 @@ blocked its own first real run** - on 7 failing tests and a stale count that had
   The tarball was also checked from outside itself: **all eight maintainer-only libraries** are absent
   (`action-pin-watch`, `release-ready`, `vendor-watch`, `standards-watch`, `eval-run`, `advisory-score`,
   `craft-review`, `stated-counts`), 72 files, 211.7 kB packed.
-  **Still outstanding, and blocking nothing:** the package is still owned by `jprisant` rather than
-  the `product-on-purpose` org. The transfer must be done in the npmjs.com web UI, because
-  `npm owner add product-on-purpose:developers` expects a username, not a team.
+  **CORRECTED 2026-09-17, because this paragraph carried a false claim.** It said the org transfer
+  "must be done in the npmjs.com web UI". It was done from the CLI on 2026-09-04 and verified live:
+  `agent-skills-toolkit` is granted `read-write` to `product-on-purpose:developers`, which is what
+  the 2026-08-31 RS-E5 ruling (npm package ownership) asked for. An npm organization CAN govern an
+  unscoped package; `npm access grant` takes the team and the package as separate arguments. What
+  remains true is narrower and is the thing actually worth tracking: `npm owner add` does expect a
+  username rather than a team, the package owner list is still one account, the org has one owner,
+  the `developers` team has one member and `maintainers` has zero. **The organization is a layer of
+  indirection over a single point of failure, not the removal of one.** Closing it needs a second
+  trusted human with an npm account, tracked as
+  [issue #313](https://github.com/product-on-purpose/agent-skills-toolkit/issues/313). Blocking
+  nothing today, which is the trap.
 - **The validator-parity harness is GATING** as of v1.12.0, discharging ADR 0042's scheduled flip.
   Its stated condition was met by v1.11.0 and v1.11.1 completing real CI cycles green. One
   consequence was accepted knowingly: under gating, a run where `uvx` cannot be installed reds a

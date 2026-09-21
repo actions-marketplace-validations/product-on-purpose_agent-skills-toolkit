@@ -8,6 +8,7 @@ import { SINCE_BY_REQ } from "./lib/standard-gate.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { resolveFindings } from "./lib/resolve-config.mjs";
 import { TIER_ORDER, tierForReq } from "./lib/tier.mjs";
+import { isOperatorFinding } from "./lib/findings.mjs";
 import { normalizeArgPath } from "./lib/fs-utils.mjs";
 
 // F1 + F3: when no findings are passed, default to the fully resolved set (the standard-aware downgrade,
@@ -50,6 +51,13 @@ export function computeTierReport(root, ctx = loadPlugin(root), findings = defau
 
   const errorsByTier = { universal: [], convergent: [], advanced: [] };
   for (const f of findings) {
+    // F-011: an operator finding is about askit.config.json, the grader's rubric file, and is not
+    // evidence about the plugin. It carries a null reqId, and tierForReq(null) buckets a null reqId as
+    // `universal` - so a trailing comma in the operator's config landed in the Universal error list and
+    // reported "Tier: None" for a plugin whose content had not changed. Filtered HERE rather than in
+    // each caller because check.mjs, evaluate.mjs and this file's own CLI all reach the grade through
+    // this one loop, and the three of them disagreeing is exactly the defect.
+    if (isOperatorFinding(f)) continue;
     const sev = f.effectiveSeverity ?? f.severity; // grade on the resolved severity, not the emitted one
     if (sev !== "error" || f.suppressed) continue;
     const tier = tierForReq(f.reqId);

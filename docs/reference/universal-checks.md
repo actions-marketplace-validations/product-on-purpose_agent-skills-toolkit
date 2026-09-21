@@ -1,6 +1,6 @@
 ---
 title: "Universal (Bronze) conformance checks"
-description: "Sixteen checks (U1-U9, U11-U17) form the portable Bronze floor every plugin must pass."
+description: "Seventeen checks (U1-U9, U11-U18) form the portable Bronze floor every plugin must pass."
 audience: engineer
 level: intermediate
 tags: [conformance, bronze, universal, standard, checks]
@@ -8,7 +8,7 @@ tags: [conformance, bronze, universal, standard, checks]
 
 # Reference: Universal (Bronze) conformance checks
 
-The Universal tier is the **portable floor**: every plugin must pass it, on any agentskills.io agent, regardless of house style. Each check fires findings tagged `reqId: "U<n>"`; `tier-report` buckets them into the `universal` tier, and a Universal error fails the gate at **every** tier (Bronze gates Silver and Gold). `U10` (`no-dashes`) was retired from the spine in Standard v0.11 (ADR 0028, a stylistic house preference, not a portability rule), so the Universal set is `U1-U9` and `U11-U17`: **sixteen checks**.
+The Universal tier is the **portable floor**: every plugin must pass it, on any agentskills.io agent, regardless of house style. Each check fires findings tagged `reqId: "U<n>"`; `tier-report` buckets them into the `universal` tier, and a Universal error fails the gate at **every** tier (Bronze gates Silver and Gold). `U10` (`no-dashes`) was retired from the spine in Standard v0.11 (ADR 0028, a stylistic house preference, not a portability rule), so the Universal set is `U1-U9` and `U11-U18`: **sixteen checks**.
 
 | reqId | Module | What it checks | Standard | Conditional? | Example fix |
 |---|---|---|---|---|---|
@@ -19,7 +19,7 @@ The Universal tier is the **portable floor**: every plugin must pass it, on any 
 | U5 | `scripts/checks/description-score.mjs` | Each skill description clears the clarity floor (a concrete action plus a use-when trigger, under the length cap). Warn-only; house provenance (dropped under `--profile plain-plugin`) | sec 8.1 | no (warn) | Rewrite the description to state the action and the use-when trigger with real keywords, under 1024 chars. |
 | U6 | `scripts/checks/reference-links.mjs` | Every `references/` link resolves to a file that exists (broken progressive-disclosure links fail) | sec 3.1 | no | Fix or remove the broken `references/` link so every reference resolves. |
 | U7 | `scripts/checks/instruction-budget.mjs` | A component body stays under the instruction budget (a longer body risks the model dropping later steps). Warn-only | sec 1 | no (warn) | Extract the longest section into `references/` and point to it, bringing the body under the budget. |
-| U8 | `scripts/checks/manifest-drift.mjs` | The committed native manifests (`.claude-plugin/`, `.codex-plugin/plugin.json`) match what `gen-manifest` produces from `library.json` (version drift is an error, the release-tag invariant) | sec 5 | no | Regenerate the native manifests: `npx agent-skills-toolkit gen-manifest . --write --target=all`. |
+| U8 | `scripts/checks/manifest-drift.mjs` | The `name` and `version` of the committed native manifests (`.claude-plugin/`, `.codex-plugin/plugin.json`) match `library.json` (version drift is an error, the release-tag invariant). Those two fields only: `gen-manifest` is not run, no other generated field is compared, and `manifest.generated.json` is not read | sec 5 | no | Regenerate the native manifests: `npx agent-skills-toolkit gen-manifest . --write --target=all`. |
 | U9 | `scripts/checks/version-match.mjs` | `package.json` version equals `library.json` version (the source of truth) | sec 5 | no | Align every component version with `library.json` (`askit-release` version mode). |
 | U11 | `scripts/checks/mcp-valid.mjs` | Every MCP server definition is well-formed and commits no inline secret | sec 3.9 | yes (MCP servers present) | Repair the MCP server definition and move any inline secret to an env reference (`askit-build-mcp` improve mode). |
 | U12 | `scripts/checks/mermaid-valid.mjs` | Every fenced `mermaid` block is structurally valid (a recognized keyword, balanced brackets, no tabs) so it renders rather than showing a broken box | sec 2.1, sec 8.4 | yes (diagrams present) | Fix the mermaid block so it parses (`askit-build-docs` improve mode). |
@@ -28,6 +28,7 @@ The Universal tier is the **portable floor**: every plugin must pass it, on any 
 | U15 | `scripts/checks/agents-dir-registerable.mjs` | Every `.md` under `agents/` is a registered subagent. A probe established that Claude Code registers **every** file it finds there, including `README` and `_README`, so a file excluded from the plugin's own registration is still live and escapes every check that reads the registration list | sec 3.3 | yes (agents present) | Register the file in `library.json` `components.subagents`, or move it out of `agents/` if it is not a subagent |
 | U16 | `scripts/checks/metadata-placement.mjs` | A sec 3.7 governance key sits inside `metadata`, not at the frontmatter top level where nothing reads it. The frontmatter **vocabulary itself is open** (44.9 percent of 2342 measured skills carry a key the Standard does not name); only PLACEMENT is checked | sec 3.7 | no | Move the governance key under `metadata:` |
 | U17 | `scripts/checks/catalogue-manifest-shape.mjs` | A present `.claude-plugin/marketplace.json` is readable by exactly one scope: it parses, it carries a `plugins` array, and its entries do not MIX skill sources with plugin sources. A mixed catalogue is claimed entirely by the first reader, so its other half is examined by nothing | sec 12 | yes (catalogue manifest present) | Split the catalogue into one manifest per kind, or repair the JSON |
+| U18 | `scripts/checks/command-size-cap.mjs` | A `commands/*.md` stays under the byte cap at which Codex's command migration refuses it. Codex migrates commands into skills and **skips** an oversized one - no skill is written and no error is raised, so the command does not exist on Codex while the repository still shows it. The cap applies to the RENDERED skill, so this measures the source file as a declared proxy and reports at `warn` (ADR 0058) | sec 3.2 | yes (`library.json` declares `codex` in `agent-targets`) | Split the command, or move the bulk of its body into a skill the command points at. Leave headroom rather than trimming to the exact number | Standard v0.16 |
 
 **Three of these arrived under a burndown, and all three have now graduated.** `STANDARD.md` sec 7.7 ships a new or tightened requirement as a `warn` for one minor before it becomes a gate-failing `error`, so no plugin takes a new failure without raising its own `standard` pin. `U13` was introduced at 0.12 (ADR 0035) and gates from 0.13. `U17` was introduced at 0.14 (ADR 0052) and **gates from 0.15**, alongside the workflow half of the components mirror (`S3`, ADR 0047), which is a Convergent check rather than a Universal one. `U14`, `U15` and `U16` carry a `since` and no cap, so they are a `warn` for any plugin pinned below their introduction and an `error` once it re-pins. **Nothing here moves red-ward without a pin change**, and a plugin carrying no `standard` pin at all has declared no floor, so every requirement applies to it immediately.
 
@@ -39,7 +40,7 @@ The Universal tier is the **portable floor**: every plugin must pass it, on any 
 
 Read the scope precisely, because it is narrower than "the toolkit is English-only":
 
-- It is **one check of thirty**. Every other check is language-neutral: a link resolves or it does not, a diagram parses or it does not, a manifest matches disk or it does not.
+- It is **one check of 35**. Every other check is language-neutral: a link resolves or it does not, a diagram parses or it does not, a manifest matches disk or it does not.
 - `U5` is **`house` provenance**, so **`--profile plain-plugin` drops it entirely**. Grading a library you do not own, in the honest third-party mode, never applies this check at all.
 - It is **warn-only**. It has never blocked a tier.
 

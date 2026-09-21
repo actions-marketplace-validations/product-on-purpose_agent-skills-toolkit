@@ -10,18 +10,31 @@
 //               covered by tests/unit/agent-restricted-fields.test.mjs
 
 /**
- * The vendor statement this module encodes, quoted verbatim. Re-verified against the live page on
- * 2026-08-13 while implementing ADR 0045; both sentences matched exactly, including "For security
- * reasons".
+ * The vendor statement this module encodes, quoted verbatim as the live page read on 2026-09-16:
  *
  *   "Plugin agents support `name`, `description`, `model`, `effort`, `maxTurns`, `tools`,
- *    `disallowedTools`, `skills`, `memory`, `background`, and `isolation` frontmatter fields. The only
- *    valid `isolation` value is \"worktree\". For security reasons, `hooks`, `mcpServers`, and
- *    `permissionMode` are not supported for plugin-shipped agents."
+ *    `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, and `isolation` frontmatter
+ *    fields. The only valid `isolation` value is \"worktree\". For security reasons, plugin-shipped
+ *    agents don't support `hooks`, `mcpServers`, or `permissionMode`."
  *
- * Note the vendor's wording is "not supported for SECURITY REASONS", which is stronger and more precise
- * than the "silently ignored" paraphrase E33 was originally filed under: the field is refused, not
- * merely dropped, and the author gets no signal that it was.
+ * The page writes "don't" with a typographic apostrophe and links `omitClaudeMd` to
+ * /docs/en/sub-agents#supported-frontmatter-fields. This file stores the ASCII apostrophe and the bare
+ * field name, because these constants are read by HUMANS in finding text. The pinned CLAIM in
+ * foundation/claims/vendor-claims.json is the copy that must match the fetched page byte-for-byte after
+ * normalisation, and it carries the link syntax for that reason - see the note there.
+ *
+ * What the 2026-09-16 re-read changed, measured against the 2026-08-13 reading taken while implementing
+ * ADR 0045, when both sentences matched this module exactly:
+ *   - the SUPPORTED list gained `omitClaudeMd`, between `background` and `isolation`.
+ *   - the refusal sentence was reworded from passive to active. On 2026-08-13 it read "For security
+ *     reasons, `hooks`, `mcpServers`, and `permissionMode` are not supported for plugin-shipped
+ *     agents." Same three fields, same meaning.
+ *   - the UNSUPPORTED list below is therefore UNCHANGED, so no plugin's verdict moves. Per ADR 0045 that
+ *     makes this a pin refresh, not a Standard revision.
+ *
+ * Note the vendor gives SECURITY REASONS for the refusal, which is stronger and more precise than the
+ * "silently ignored" paraphrase E33 was originally filed under: the field is refused, not merely
+ * dropped, and the author gets no signal that it was.
  *
  * ADR 0045 decides what happens when this page changes, and the answer is asymmetric:
  *   - a field REMOVED from the unsupported list is a SILENT RE-READ. The check becomes less strict,
@@ -34,16 +47,16 @@
  * The docs host has already moved once (docs.claude.com now 301s to code.claude.com). A host move is a
  * documentation edit, not a Standard revision.
  */
-export const AGENT_FIELDS_DOC = "https://code.claude.com/docs/en/plugins-reference (Agents; read 2026-08-13)";
+export const AGENT_FIELDS_DOC = "https://code.claude.com/docs/en/plugins-reference (Agents; read 2026-09-16)";
 
 /** The vendor's sentence, quoted in every finding so a reader's "says who" is answered in place. */
 export const AGENT_FIELDS_QUOTE =
-  "For security reasons, hooks, mcpServers, and permissionMode are not supported for plugin-shipped agents";
+  "For security reasons, plugin-shipped agents don't support hooks, mcpServers, or permissionMode";
 
 export const PLUGIN_AGENT_UNSUPPORTED_FIELDS = Object.freeze(["hooks", "mcpServers", "permissionMode"]);
 
 export const PLUGIN_AGENT_SUPPORTED_FIELDS = Object.freeze([
-  "name", "description", "model", "effort", "maxTurns", "tools", "disallowedTools", "skills", "memory", "background", "isolation",
+  "name", "description", "model", "effort", "maxTurns", "tools", "disallowedTools", "skills", "memory", "background", "omitClaudeMd", "isolation",
 ]);
 
 /**

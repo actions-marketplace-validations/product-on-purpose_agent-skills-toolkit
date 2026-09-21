@@ -28,6 +28,20 @@ By default the gate grades every plugin against the full Advanced Skill Library 
 
 All keys are optional; an absent file, an empty `{}`, or any absent key falls back to the documented default. A malformed file is surfaced as a finding, never a crash.
 
+**A problem in this file is an OPERATOR error, not a conformance defect of the plugin.** `askit.config.json` selects the rubric; it is not part of what is being graded. Every finding the loader emits is labelled `[operator/...]` and can never move the tier, in either CLI. A fatal problem - the file is not valid JSON, or is not a JSON object - means the rubric in force is not the one you selected, so the run exits **2** (this CLI's operator-error code) rather than 1, which would say the plugin failed. Both CLIs treat a broken rubric this way. **They do NOT otherwise agree on exit codes for the same directory, and no claim here should be read as saying so** - `tests/fixtures/golden/lone-skill` is the standing counter-example: `check.mjs` exits 1 (no `library.json`, so it grades the folder as a plugin against the full ladder) while `evaluate.mjs` exits 0 (it detects component scope). That disagreement predates this change and is untouched by it. This is a CLI behaviour, not a Standard requirement: no check, severity or `since` window changed. Previously a trailing comma here took a conforming Bronze plugin to `Tier: None` with exit 1, measured on a clone of `tests/fixtures/golden/minimal-skill`.
+
+Stated precisely, because the two CLIs report differently and one of them is not finished:
+
+| Surface | Operator findings are... |
+|---|---|
+| `check.mjs` tier, `errorCount`, `warnCount`, exit code | excluded; printed in their own labelled block ahead of the findings |
+| `check.mjs --json` | kept in `findings` with `operator: true`, counted separately in `operatorErrorCount`; the block goes to stderr so stdout stays one document |
+| `check.mjs --gha` | annotated first, labelled "operator problem" |
+| `evaluate.mjs` tier and exit code | excluded; the finding is printed with an `[operator/...]` label |
+| `evaluate.mjs` `summary.errors` and `dispositions.realIssues` | **still counted**, so an unloadable config adds 1 to both. Tracked as a follow-up: separating it needs a sixth disposition bucket, and the five are a documented partition that consumers sum (ADR 0044). |
+| `--sarif` | emitted as an ordinary result at level `error` with `ruleId: "config"`, unlabelled. Also a follow-up. |
+| The GitHub Action | reported as its own `operator-errors` output, separate from `errors`, and annotated on the diff. See [run the gate in GitHub Actions](../how-to/run-the-gate-in-github-actions.md). |
+
 - **`mode`** (default `"local"`): `"local"` or `"published-verdict"`. See [Published-verdict mode](#published-verdict-mode).
 - **`profile`** (default `"askit-library"`): a named profile. See [Profiles](#profiles).
 - **`rules`** (default `{}`): a map of `reqId` to an effective severity, `"error" | "warn" | "off"`. `off` drops every finding from that check; the others override the severity the check emitted. An unknown `reqId` or an invalid severity is a config warning and is ignored.
@@ -56,6 +70,8 @@ Resolution runs in **four ordered steps** (ADR 0044). (1) Profile, then per-rule
 The ordering matters and it changed at Standard 0.13: the pin used to be applied as a pre-pass BEFORE your configuration resolved, which meant a per-rule override outranked it. **It no longer does.** A `rules.X = "error"` on a check introduced or tightened after your pin is honoured and then held back, and the reason is reported rather than the override silently appearing ignored.
 
 To grade a plugin you do not own under a profile, pass `--profile <name>` on the CLI instead of writing a config file into its tree (see [CLI](#cli)). This is the intended path for grading a third-party plugin: `--profile plain-plugin` drops the askit library-ladder findings so only portable defects remain.
+
+**The gate now names this profile for you when it is likely the one you want.** Pointing it at a directory with no `library.json` - a folder of loose skills, which is what a plain plugin usually is - grades it against the full askit ladder, so the output fills with house and Gold requirements the author never claimed. When no profile has been chosen (neither `--profile` nor a `profile` key in a config), the gate prints one line ahead of the findings saying so and naming both opt-ins. It is a hint and nothing more: no finding, no severity, and no effect on the verdict or the exit code.
 
 ## Suppressions
 
@@ -94,4 +110,4 @@ npx agent-skills-toolkit evaluate <path> --json
 npx agent-skills-toolkit evaluate <path> --format=html --profile plain-plugin --out report.html
 ```
 
-An unknown `--profile` or `--mode` is rejected with exit code 2.
+An unknown `--profile` or `--mode` is rejected with exit code 2, and so is an `askit.config.json` that does not load (see [Schema](#schema)).

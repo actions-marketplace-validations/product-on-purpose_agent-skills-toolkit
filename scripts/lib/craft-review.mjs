@@ -134,6 +134,12 @@ export function partitionCraftFindings(findings) {
  */
 export function phaseTwoEligible(gate) {
   const g = gate && typeof gate === "object" ? gate : {};
+  // F-011: exit 2 is the gate's OPERATOR-error code - the run itself was misconfigured - and it can
+  // come back with zero gate findings, so the exit-1 wording sent the author hunting for a finding list
+  // that does not exist. Eligibility is unchanged in both branches: neither is clean.
+  if (g.exitCode === 2) {
+    return { eligible: false, reason: "the deterministic gate exited 2, its operator-error code: the RUN was misconfigured (an askit.config.json that does not load, or an invalid --profile or --mode). There may be no gate findings to resolve; fix the run and re-run the gate" };
+  }
   if (g.exitCode !== 0) {
     return { eligible: false, reason: `the deterministic gate is not clean (exit code ${JSON.stringify(g.exitCode ?? null)}); resolve the gate findings in phase 1 first` };
   }

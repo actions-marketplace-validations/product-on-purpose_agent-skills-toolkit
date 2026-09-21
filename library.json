@@ -1,8 +1,8 @@
 {
   "name": "agent-skills-toolkit",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "description": "Toolkit and Standard for authoring, validating, governing, and scaling cross-agent skill libraries (Claude Code and Codex) to a tiered Bronze/Silver/Gold quality bar. Use when building or grading agent skill plugins, when emitting components for multiple agents, or when adopting the Advanced Skill Library Standard.",
-  "standard": "0.15",
+  "standard": "0.17",
   "selfValidation": "vendored",
   "tier": "advanced",
   "prefix": "askit-",
@@ -111,7 +111,7 @@
       {
         "name": "askit-build-subagent",
         "path": "skills/askit-build-subagent/SKILL.md",
-        "version": "0.2.0",
+        "version": "0.2.1",
         "tier": "universal",
         "status": "active"
       },

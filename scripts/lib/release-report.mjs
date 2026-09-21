@@ -7,6 +7,7 @@ import path from "node:path";
 import { evaluate } from "../evaluate.mjs";
 import { gateExitFromFindings } from "../check.mjs";
 import { readJsonSafe } from "./fs-utils.mjs";
+import { isOperatorFinding } from "./findings.mjs";
 
 const effSev = (f) => f.effectiveSeverity ?? f.severity;
 // The version-bearing manifests the release.yml guard enforces (the tag must equal every one of them).
@@ -51,7 +52,16 @@ export function releaseReport(target, opts = {}) {
   const base = evaluate(target, opts);
   const declared = readJsonSafe(path.join(target, "library.json")).data?.tier;
   const forGate = (base.findings ?? []).filter((f) => !f.suppressed).map((f) => ({ ...f, severity: effSev(f) }));
-  const { exitCode: gateExit } = gateExitFromFindings(forGate, declared);
+  let { exitCode: gateExit } = gateExitFromFindings(forGate, declared);
+  // F-011, the SAME override evaluate.mjs's CLI applies (scripts/evaluate.mjs, the `isOperatorFinding`
+  // line in runCli) and check.mjs applies in runGate. Without it `release.gateExit` was the only number
+  // in the document still counting an operator finding as a gate-failing Universal error: on a clone of
+  // golden/minimal-skill with a trailing comma in askit.config.json the release card read
+  // `Gate exit code | 1 (fails)` while the masthead chip, the KPI, the metadata table and the process
+  // itself all read 2. Not a filter on `forGate` instead of this: with only an operator error and no
+  // conformance error a filter would yield 0, and computeGoNoGo would call a rubric that never loaded a
+  // "go".
+  if ((base.findings ?? []).some((f) => isOperatorFinding(f) && effSev(f) === "error" && !f.suppressed)) gateExit = 2;
   const notesPresent = existsSync(path.join(target, "RELEASE-NOTES.md"));
   const versionConsistency = checkVersionConsistency(target);
   const goNoGo = computeGoNoGo({ gateExit, notesPresent, versionConsistent: versionConsistency.ok });

@@ -2,7 +2,8 @@
 // what-it-does: reads the --json report scripts/check.mjs already produced (buildJsonReport's shape:
 //               tierReport.tier, errorCount, warnCount, exitCode, plus the full findings/config
 //               check.mjs already computes), VALIDATES that shape, and prints GITHUB_OUTPUT-format
-//               "name=value" lines for the three outputs action.yml exposes: tier, errors, warnings
+//               "name=value" lines for the four outputs action.yml exposes: tier, errors, warnings,
+//               operator-errors
 // why:          Standard sec 4.1/4.4 (CI-agnostic runner, local/CI parity) requires CI configuration
 //               to hold no validation logic of its own, only invoke a portable script; action.yml
 //               states the same invariant applies to the published Action. This file is where the
@@ -40,14 +41,29 @@ export function validateReport(report) {
   if (!Number.isInteger(report.warnCount) || report.warnCount < 0) {
     problems.push(`warnCount: expected a non-negative integer, got ${JSON.stringify(report.warnCount)}`);
   }
-  if (report.exitCode !== 0 && report.exitCode !== 1) {
-    problems.push(`exitCode: expected 0 or 1, got ${JSON.stringify(report.exitCode)}`);
+  // 2 joined this domain when a defect in the GRADER's own askit.config.json stopped being counted as
+  // a conformance defect of the plugin (F-011, the grader config drags the tier down). check.mjs has
+  // always returned 2 for an operator error - an unknown flag, an invalid --mode or --profile, a root
+  // that is not a directory - but none of those reach this file, because the Action never gets as far
+  // as writing a report for them. An unloadable rubric DOES: the gate grades, writes a full report, and
+  // exits 2. Rejecting it here failed the Action's outputs step with "exitCode: expected 0 or 1, got 2",
+  // which reads as a toolkit bug rather than as "your askit.config.json does not parse", and left tier,
+  // errors, warnings and sarif-path unset for the rest of the job.
+  if (![0, 1, 2].includes(report.exitCode)) {
+    problems.push(`exitCode: expected 0, 1 or 2, got ${JSON.stringify(report.exitCode)}`);
+  }
+  // Validated, never defaulted, exactly like the other counts: this file's whole premise is that a
+  // report it cannot fully read must not be projected into outputs at all. check.mjs has emitted this
+  // field since the same change that introduced exit 2, and the Action runs check.mjs from its own
+  // action_path, so there is no version skew for it to be absent across.
+  if (!Number.isInteger(report.operatorErrorCount) || report.operatorErrorCount < 0) {
+    problems.push(`operatorErrorCount: expected a non-negative integer, got ${JSON.stringify(report.operatorErrorCount)}`);
   }
   return problems;
 }
 
 /**
- * Pure: takes the ALREADY-COMPUTED buildJsonReport() object and returns the three GITHUB_OUTPUT lines
+ * Pure: takes the ALREADY-COMPUTED buildJsonReport() object and returns the four GITHUB_OUTPUT lines
  * the Action exposes as outputs. Throws when validateReport() finds any problem, naming every field
  * involved, rather than defaulting - see the file header for why a default here is not an option.
  */
@@ -56,7 +72,16 @@ export function toGithubOutputLines(report) {
   if (problems.length > 0) {
     throw new Error(`gha-action-outputs: report failed schema validation:\n${problems.map((p) => `  - ${p}`).join("\n")}`);
   }
-  return [`tier=${report.tierReport.tier}`, `errors=${report.errorCount}`, `warnings=${report.warnCount}`];
+  // `operator-errors` is a SEPARATE output rather than folded into `errors`, because the two answer
+  // different questions and a workflow running with `fail-on-error: false` reads them. `errors` is what
+  // is wrong with the plugin; `operator-errors` is what is wrong with the run. Folding them would put
+  // back the very falsehood F-011 removed, in the one place a machine reads it.
+  return [
+    `tier=${report.tierReport.tier}`,
+    `errors=${report.errorCount}`,
+    `warnings=${report.warnCount}`,
+    `operator-errors=${report.operatorErrorCount}`,
+  ];
 }
 
 function main() {

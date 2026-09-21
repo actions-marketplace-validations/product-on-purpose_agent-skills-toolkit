@@ -1,6 +1,8 @@
 // what-it-is:   the manifest-drift check (U8)
-// what-it-does: asserts the committed native per-agent manifests match what gen-manifest produces from library.json;
-//               version drift is an ERROR (the release tag guard's exact invariant), name drift a WARN
+// what-it-does: compares ONLY the "name" and "version" of each committed native per-agent manifest against library.json;
+//               version drift is an ERROR (the release tag guard's exact invariant), name drift a WARN.
+//               It does NOT run gen-manifest and compares no other generated field (description, license,
+//               keywords, the component pointers), and it never reads manifest.generated.json
 // why:          enforces the Standard requirement U8 deterministically, one module per reqId, so the gate stays model-free;
 //               making version drift an error keeps the portable gate authoritative for what the release.yml tag guard checks
 // used-by:      registered in scripts/lib/registry.mjs; run by scripts/check.mjs and tier-report.mjs

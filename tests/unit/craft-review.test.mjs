@@ -226,6 +226,19 @@ test("phase 2 is eligible only when the gate is clean, and ineligibility states 
   assert.equal(phaseTwoEligible({ exitCode: 0, errors: 2 }).eligible, false, "an inconsistent result (exit 0 with errors) is not clean");
 });
 
+test("F-011: exit 2 says the RUN was misconfigured, not that there are gate findings to resolve", () => {
+  // A broken askit.config.json makes the gate exit 2 with ZERO gate findings.
+  // Delete the exitCode === 2 branch in phaseTwoEligible and this reads "resolve the gate findings in
+  // phase 1 first", sending the author after a list that does not exist.
+  const op = phaseTwoEligible({ exitCode: 2, errors: 0, warns: 0 });
+  assert.equal(op.eligible, false, "an operator error is still not clean");
+  assert.match(op.reason, /operator-error code/, "it is named as an operator error");
+  assert.match(op.reason, /askit\.config\.json that does not load/, "and the likeliest cause is named");
+  assert.ok(!/resolve the gate findings in phase 1 first/.test(op.reason), "never the exit-1 instruction");
+  // The exit-1 wording is unchanged, because for exit 1 it is true.
+  assert.match(phaseTwoEligible({ exitCode: 1, errors: 2 }).reason, /resolve the gate findings in phase 1 first/);
+});
+
 // ---------------------------------------------------------------------------------------------
 // The consent-gated apply
 // ---------------------------------------------------------------------------------------------

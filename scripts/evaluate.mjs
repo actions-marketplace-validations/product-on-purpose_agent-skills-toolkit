@@ -13,7 +13,7 @@ import { PROFILES } from "./lib/profiles.mjs";
 import { resolveFindings } from "./lib/resolve-config.mjs";
 import { computeTierReport } from "./tier-report.mjs";
 import { checkAgentskills } from "./checks/agentskills.mjs";
-import { finding, SEVERITY } from "./lib/findings.mjs";
+import { finding, SEVERITY, isOperatorFinding } from "./lib/findings.mjs";
 import { readJsonSafe, SKIP_DIRS, normalizeArgPath } from "./lib/fs-utils.mjs";
 import { gateExitFromFindings } from "./check.mjs";
 
@@ -148,6 +148,13 @@ export function formatReport(r) {
   lines.push(`Evaluating (${r.scope}): ${r.target}`);
   for (const f of r.findings) {
     if (f.suppressed || effSev(f) === "off") continue; // disabled/waived findings are summarized in the split, not listed here
+    // F-011: an operator finding is about askit.config.json, the grader's rubric file. It is labelled
+    // here for the same reason check.mjs gives it its own block: printed as `[error] config: ...` in the
+    // same stream as U1 and G4, it reads as a conformance defect of the plugin, which it is not.
+    if (isOperatorFinding(f)) {
+      lines.push(`  [operator/${effSev(f)}] ${f.message} (your grader configuration, not the plugin; it does not affect the tier)${f.file ? "  -> " + f.file : ""}`);
+      continue;
+    }
     lines.push(`  [${effSev(f)}] ${f.reqId ?? f.check}: ${f.message}${f.clampNotice && !f.trustNotice ? " [clamped to warn: published-verdict]" : ""}${f.trustNotice ? ` [${f.trustNotice}]` : ""}${f.migrationNotice ? ` [${f.migrationNotice}]` : ""}${f.file ? "  -> " + f.file : ""}`);
   }
   if (r.tier !== undefined) lines.push(`Tier: ${r.tier}`);
@@ -224,16 +231,52 @@ function targetHasEnumeratingManifest(target) {
   return false;
 }
 
-// Builds the set of reqIds that should render N/A (not PASS) when no findings are present.
-// The base set covers checks whose artifacts are always optional (G1 hooks, G6 deprecation,
-// U11 managed-connector). U12 and U13 are added dynamically based on target content so a
-// plugin that actually has diagrams or an enumerating manifest never silently shows N/A.
+// Returns true when library.json declares at least one component entry in any of its component lists.
+// That is STRICTER than G6's own early return, which is `if (!lib || typeof lib.components !== "object"
+// || lib.components === null) return []` (checks/deprecation.mjs:21) - object-ness, never entry count.
+// Measured 2026-09-18: a library.json carrying `"components": {}` makes this return false, so the report
+// says N/A, while deprecation.mjs does NOT early-return - it iterates an empty map and returns [].
+// Deliberately NOT "a deprecated entry exists": G6 validates the `status` of EVERY entry, so an
+// all-active plugin has had its statuses read and passed.
+function targetHasComponentEntries(target) {
+  const components = readJsonSafe(path.join(target, "library.json")).data?.components;
+  if (!components || typeof components !== "object" || Array.isArray(components)) return false;
+  return Object.values(components).some((list) => Array.isArray(list) && list.length > 0);
+}
+
+// Builds the set of reqIds that render N/A (not PASS) when no findings are present.
+//
+// N/A means the check had nothing of its own to examine. Every entry is derived from the subject on
+// disk and APPROXIMATES the check's not-applicable case; it is NOT the module's early-return expression,
+// and the two can diverge. Measured 2026-09-18: `"components": {}` puts G6 in this set while
+// deprecation.mjs does not early-return, and a `.mcp.json` holding `{"mcpServers": {}}` keeps U11 OUT of
+// it while mcp-valid.mjs returns early on `servers.length === 0`. Each line below says what is tested
+// here, which is the only thing the report can claim.
+//
+// This replaces a FIXED base set of G1, G6 and U11 "whose artifacts are always optional", which was
+// F-007 of the 2026-09-04 audit: those three were N/A on every subject, including one that has the
+// artifact. This repository ships hooks/hooks.json and declares 35 components, and its own report
+// read `G1 hook-documentation | N/A | Nothing to validate for this subject (vacuous pass).` for a
+// hook G1 had examined and passed - while docs/explanation/validation-and-improvement.md said the
+// Gold checks "grade real artifacts (a real hook, ...), not empty placeholders". Both could not be
+// true. Reproduced and guarded in tests/unit/evaluate-conditional.test.mjs.
 export function buildConditional(target) {
-  const base = new Set(["G1", "G6", "U11"]);
-  if (!target) return base;
-  if (!targetHasMermaidBlocks(target)) base.add("U12");
-  if (!targetHasEnumeratingManifest(target)) base.add("U13");
-  return base;
+  // No subject: no precondition can be evaluated, so nothing may be reported as examined.
+  if (!target) return new Set(["U11", "U12", "U13", "G1", "G6"]);
+  const conditional = new Set();
+  // U11 (mcp-valid): no .mcp.json on disk - the module's own docblock says "Conditional: no .mcp.json
+  // => not applicable". A PRESENT .mcp.json declaring no servers stays out of this set even though
+  // mcp-valid.mjs returns early on it; see the divergence noted above.
+  if (!existsSync(path.join(target, ".mcp.json"))) conditional.add("U11");
+  // U12 (mermaid-valid): no fenced mermaid block anywhere, so there is no diagram to parse.
+  if (!targetHasMermaidBlocks(target)) conditional.add("U12");
+  // U13 (skill-registration): no enumerating manifest, so there is nothing to reconcile against disk.
+  if (!targetHasEnumeratingManifest(target)) conditional.add("U13");
+  // G1 (hook-documentation): `if (!isFile(hooksPath)) return []` - checks/hook-documentation.mjs.
+  if (!existsSync(path.join(target, "hooks", "hooks.json"))) conditional.add("G1");
+  // G6 (deprecation): library.json declares no component entry, so there is no entry to read a `status` from.
+  if (!targetHasComponentEntries(target)) conditional.add("G6");
+  return conditional;
 }
 
 // The options bag the pure renderer needs that is not on the bare report object: the subject identity,
@@ -349,6 +392,22 @@ async function runCli() {
   } else {
     const forGate = r.findings.filter((f) => !f.suppressed).map((f) => ({ ...f, severity: effSev(f) }));
     ({ exitCode } = gateExitFromFindings(forGate, declared));
+    // F-011, and the SAME rule check.mjs applies, because two CLIs disagreeing about one directory is
+    // the defect. An operator finding carries a null reqId, which tierForReq buckets as `universal`, so
+    // a trailing comma in askit.config.json gated above as though it were a Universal conformance
+    // failure. Once computeTierReport stopped counting it toward the tier, that produced the
+    // contradiction outright: `Tier: universal` printed beside exit 1, with no universal conformance
+    // error in the list to justify it (measured on a clone of golden/minimal-skill).
+    //
+    // The correction is this ONE line and deliberately not also a filter on `forGate` above. A filter
+    // there would be unreachable: it can only ever remove an error-severity operator finding, and
+    // whenever one of those exists this line overrides the result anyway, so no input reaches the gate
+    // differently because of it. An unreachable guard is a false claim about what is protecting you -
+    // it cannot be shown failing, so it is not written.
+    //
+    // Exit 2, not 0: excluding the finding from the GRADE must not make a broken rubric read green,
+    // which would be a clean verdict computed against a rubric nobody selected.
+    if (r.findings.some((f) => isOperatorFinding(f) && effSev(f) === "error" && !f.suppressed)) exitCode = 2;
   }
 
   let output;
@@ -370,7 +429,11 @@ async function runCli() {
     console.log(output);
   }
   // Rendering a report is orthogonal to the gate verdict: the exit code always reflects the gate, never the format.
-  process.exit(exitCode);
+  // Set as process.exitCode rather than process.exit(): a pipe is written asynchronously on POSIX, and exiting
+  // right after console.log(output) cut a large report at one pipe buffer (65536 bytes) whenever stdout was
+  // piped. runCli() is the last thing this module does, so the process ends on its own once stdout has
+  // drained (tests/unit/cli-stdout-drain.test.mjs covers the same defect for both CLIs).
+  process.exitCode = exitCode;
 }
 
 if (process.argv[1]?.endsWith("evaluate.mjs")) runCli();

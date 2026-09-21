@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: product-on-purpose/agent-skills-toolkit@v1.18.0
+      - uses: product-on-purpose/agent-skills-toolkit@v1.19.0
         with:
           path: .
 ```
@@ -44,7 +44,7 @@ not clone anything for you.
 ## Pin a released tag, not a branch
 
 ```yaml
-uses: product-on-purpose/agent-skills-toolkit@v1.18.0   # a tag, or a full commit sha
+uses: product-on-purpose/agent-skills-toolkit@v1.19.0   # a tag, or a full commit sha
 ```
 
 A tag or a sha means your build grades against a version you chose. `@main` means an upstream change
@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - id: gate
-        uses: product-on-purpose/agent-skills-toolkit@v1.18.0
+        uses: product-on-purpose/agent-skills-toolkit@v1.19.0
         with:
           path: .
           sarif: true
@@ -109,7 +109,12 @@ the scope of the finding without leaving the page.
 | `tier` | `advanced` | One of `universal`, `convergent`, `advanced`, `none`. |
 | `errors` | `0` | Gate-failing errors at your **declared** tier. |
 | `warnings` | `3` | Warnings, which never fail the gate. |
+| `operator-errors` | `0` | Problems with the **run**, not the plugin: an `askit.config.json` that does not load. Non-zero means the grade beside it was computed with default configuration, so read this before trusting a green `errors`. |
 | `sarif-path` | `/tmp/...sarif` | Empty unless `sarif: true`. |
+
+The step's own exit status carries the same distinction: **1** means the plugin failed its declared
+tier, **2** means the run was misconfigured. With `fail-on-error: false` neither fails the build, which
+is why `operator-errors` exists as an output rather than only as an exit code.
 
 Branch on them like any other step output:
 

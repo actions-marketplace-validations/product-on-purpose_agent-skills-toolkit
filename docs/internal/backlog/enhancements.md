@@ -10,7 +10,7 @@
   1. **Masthead / verdict** - subject, report type, date, the headline grade (tier earned), a climb indicator, and key stats (checks passed, blockers, warnings, gate exit code).
   2. **Executive summary** - for a non-engineer: what was evaluated, the verdict, the top findings, the recommended next move.
   3. **What was evaluated / component breakdown** - the subject's identity (declared tier, version, agent-targets, prefix), its components and functionality, anatomy.
-  4. **Methodology & scope** - the three layers (deterministic conformance decides the tier; behavioral and review sit beside it), the legend, and a confidence / limitations note (which findings are exact vs judgment; vacuous passes such as `G1`/`G6`).
+  4. **Methodology & scope** - the three layers (deterministic conformance decides the tier; behavioral and review sit beside it), the legend, and a confidence / limitations note (which findings are exact vs judgment; vacuous passes, which since the F-007 fix mean only that a check's own precondition was not met).
   5. **Tier compliance - evidence ledger** - per tier (Bronze / Silver / Gold) a verdict bar plus a row per requirement: status, the evidence (what was found, file:line and check module), and for every non-compliance a short **why it matters** explanation with impact.
   6. **The climb / burndown** - exactly what blocks the next tier, ordered, with effort estimates.
   7. **Improvement path** - a card per gap: the issue, the fix, a **copy-paste prompt** that executes it with the toolkit's own skills, plus priority and effort.
@@ -128,7 +128,7 @@ The actionable output of the verified competitive comparison (`docs/internal/res
 
 - **Target:** `scripts/checks/description-score.mjs` (`U5`).
 - **The measurement (corpus batch 3, reading 18):** across 349 French skills, `U5`'s `WHEN` trigger pattern fired on **0 of 346** parseable descriptions, while **341 of them carried an explicit French trigger clause**. Same-batch English controls: 705 of 1016, and 134 of 136. Because `WHEN` is worth 0.35 of a 1.0 score against a 0.7 threshold, a description the pattern cannot match caps at **0.65**. No French description can pass, however good. The clearest case scored 0.30 while containing "A utiliser quand l'utilisateur veut relire, corriger ou ameliorer un texte francais", a word-for-word rendering of the exact construction the pattern rewards.
-- **Scope, stated precisely so this is not over-read:** this is **one check of thirty**, and it carries `house` provenance, so `--profile plain-plugin` (the honest third-party grading mode) **drops it entirely**. A non-English library graded the way you would grade someone else's work never sees this. The defect bites only a library that adopts this Standard, declares a tier, and writes non-English descriptions. Every other check is language-neutral: a link resolves or it does not, a diagram parses or it does not, a manifest matches disk or it does not.
+- **Scope, stated precisely so this is not over-read:** this is **one check of 35**, and it carries `house` provenance, so `--profile plain-plugin` (the honest third-party grading mode) **drops it entirely**. A non-English library graded the way you would grade someone else's work never sees this. The defect bites only a library that adopts this Standard, declares a tier, and writes non-English descriptions. Every other check is language-neutral: a link resolves or it does not, a diagram parses or it does not, a manifest matches disk or it does not.
 - **Change:** an ADR that answers a design question, not a patch that adds French patterns. Adding French vocabulary moves the same cliff one language over and leaves German, Japanese, and Portuguese exactly where French is now. The real options are (a) detect the description's language and score only where a lexicon exists, reporting "not scored" rather than a failing number elsewhere; (b) a pluggable per-language lexicon with English as one entry rather than the hardcoded default; (c) a language-independent structural signal for "states when to use it" (for example the presence of a conditional clause) with the lexical match as a bonus rather than a requirement; (d) scope `U5` explicitly to English in the Standard and say so, which is honest but caps the Standard's reach.
 - **Recommendation:** (a) or (c). Option (d) is the cheap answer and should not be taken by default, because the limitation is one heuristic in one check, not a property of the Standard.
 - **Related upstream constraint, not ours:** the agentskills.io spec requires `name` to be lowercase ASCII with hyphens, which independently constrains non-Latin-script naming. That is upstream's rule; `askit-standards-watch` now tracks that file.
@@ -645,10 +645,92 @@ One entry, from adversarial wave 1 over the v1.16.0 implementation. Its six othe
 - **Target:** `scripts/lib/release-ready.mjs`'s `GATES`, and `.github/workflows/standards-watch.yml`'s closing note.
 - **The question, not a defect.** `vendor-watch` gates the tag; `standards-watch`, added on a cron in cut 2, does not. Decision queue 8 ruled 2026-08-31: cron and issues now, no release gate yet. This entry exists so the deferral has an owner and an expiry rather than becoming permanent by silence.
 - **Why the asymmetry is defensible today.** `vendor-watch` asserts that a sentence THIS repository publishes as fact is still on the vendor's page - a false statement here, with a remedy always available, because editing the sentence is the fix. `standards-watch` asserts something about somebody else's release cadence. Gating a tag on upstream freshness is a stale-by-date blocker whose remedy may not exist on the day it fires, which is the shape the early `vendor-watch` design had and was corrected for. A release gate with no available remedy is a trap, not a gate.
-- **The revisit trigger:** three clean SCHEDULED runs, not dispatched ones - so no earlier than the **2026-11-15** run (the cron is `0 7 15 * *`, first firing 2026-09-15). If all three are green, the gate becomes an ADR that must state the remedy for the blocked-tag case before it is adopted. If any of the three refuses or finds drift, the count restarts: a gate built on a watch still finding things would block tags on the finding rather than on this repository's own readiness.
+- **The revisit trigger:** three clean SCHEDULED runs, not dispatched ones - so originally no earlier than the 2026-11-15 run (the cron is `0 7 15 * *`, first firing 2026-09-15). If all three are green, the gate becomes an ADR that must state the remedy for the blocked-tag case before it is adopted. If any of the three refuses or finds drift, the count restarts: a gate built on a watch still finding things would block tags on the finding rather than on this repository's own readiness.
+- **The count has already restarted, and the date moved. Measured 2026-09-17.** The first scheduled run fired on 2026-09-15 (`event: schedule`, run `34969288827`, conclusion `success`) and **found drift**, opening [issue #323](https://github.com/product-on-purpose/agent-skills-toolkit/issues/323) twelve seconds later. By this entry's own restart rule the next three scheduled runs are 2026-10-15, 2026-11-15 and 2026-12-15, so **the earliest revisit is 2026-12-15**, not 2026-11-15. The restart rule working on its first opportunity is the entry behaving as designed, not a setback.
 - **Prior art to reuse either way:** `action-pin-watch`'s split (ADR 0053) is the closest precedent - it gates on a label that disagrees with its own pin (a defect here) and deliberately does NOT gate on being merely behind an upstream release (news about somebody else's cadence). If this becomes a gate, that split is probably its shape.
 - **Status:** open, unversioned. Filed 2026-09-02 with the cut-2 workflow, per the convention that a decision is recorded where the work happened rather than remembered.
 
+### E61 - the tier certifies FILE SHAPE, so a plugin of placeholder files earns Gold  [design, effort L, ADR-gated, the 2026-09-04 audit's headline finding]
+
+- **Target:** the tier model itself, and every surface that presents a tier. Not a single check.
+- **Found by:** the 2026-09-04 external audit (its `F-001`), against a purpose-built plugin of 33 placeholder files.
+- **The finding is reproducible in-tree, not cited.** The audit tree is tracked byte-for-byte at `tests/fixtures/audit-corpus/potemkin-gold` and graded by `tests/unit/potemkin-gold.test.mjs`: **`Tier: Advanced (no blockers detected)`, 0 errors, 0 warnings**, exit 0. Every skill body in it reads `Do nothing.`, and the test asserts that too, so the evidence cannot be improved away by someone tidying a fixture. It is graded identically to this repository. Zero WARNINGS is the load-bearing half: the tree pins `"standard": "0.15"`, and nothing was held back by that pin at any severity.
+- **Why it is the headline.** This is the finding a badge reader pays for. The tier grades structure - a manifest exists, the docs quadrants are non-empty, CI is wired - and structure is exactly what a template can synthesise. `docs/explanation/limitations.md` says the tier is structural; **nothing that PRESENTS a tier said so** until cut 2 shipped the scope sentence to five placements, and a sentence is not a measurement.
+- **What it is NOT.** It is not an argument for a stricter tier, and the audit is explicit about that: another rung of file presence has the same ceiling. It is an argument for reporting something BESIDE the tier that a placeholder plugin cannot score well on.
+- **The proposal on the table** is a deterministic, non-gating health score with its own name: five categories (description structure, instruction budget, reference integrity, eval coverage, safety patterns), each the percentage of components passing a binary test, averaged. A reference implementation exists in the audit's `samples/render.mjs`.
+- **Blocked on a maintainer decision, and it is the irreversible one.** Adding a number beside the tier changes what every badge already published means, including the six family members'. That is decision **D-01**, open as of 2026-09-09.
+- **Known scaling properties, measured from the reference implementation** so the decision is made with them visible: a Bronze plugin can legitimately outscore a Gold one, because the two axes are orthogonal by construction; small plugins are punished harder, since each category is a fraction of components and one bad skill in five costs twenty points; the denominator moves, because two of the five categories are computed over skills and drop out entirely for a plugin with none; and the mean is unweighted, so safety counts exactly as much as description structure.
+- **Status:** OPEN, ADR-gated on D-01, unversioned.
+
+### E62 - the Standard pin has no floor, so a plugin chooses which rules apply to it  [correctness, effort M, ADR-gated]
+
+- **Target:** `scripts/checks/library-json.mjs` (`U1`, which validates presence only), `scripts/lib/standard-version.mjs`, `scripts/lib/standard-ceiling.mjs`.
+- **Found by:** the 2026-09-04 external audit (its `F-006`).
+- **The mechanism, verified here on 2026-09-09 rather than cited:** grading this repository at `"standard": "0.9"` gives **78 errors and 1 warning** where its own pin gives **79 errors and 0 warnings**. One check moved from gating to advisory purely because of the declared pin. The pin waives only checks introduced AFTER the version named, which is the mechanism working as designed - the defect is that nothing bounds how far back the pin may reach.
+- **The audit's figure of NINE waived checks is now OURS, reproduced in-tree.** It came from a purpose-built `09-pin-abuse` fixture built by `corpus/build.mjs`, which resolves paths against a hard-coded `audit/` directory and so cannot be run from a clean clone. The tree is therefore rebuilt as a tracked fixture at `tests/fixtures/audit-corpus/pin-abuse`, and `tests/unit/standard-pin-floor.test.mjs` pins what the gate does with it: **Advanced, exit 0, 0 errors, 11 warnings, every one of them a downgrade, across EIGHT requirements** (`U14` `U15` `U16` `U17` `G7` `G8` `G9` `G10`). The ninth, `U12` (mermaid-valid), is restored in a tmpdir copy inside that test rather than checked in, because `U12` scans a repository repo-wide and `tests/` is not in `SKIP_DIRS` - committing a broken diagram moved this repository's own `node scripts/check.mjs .` from Advanced/0 errors to None/2 errors, measured. With it restored the fixture reproduces the audit's line exactly: **nine requirements, 0 errors, 14 warnings.**
+- **A second, smaller half, and it is NOT the dangerous one.** An unknown or malformed pin value (`"banana"`, `"v0.16"`) was checked on 2026-09-09 and grades at **full strength** - 79 errors, identical to a correct pin - because `isAfter` returns false for anything unparseable and no constraint binds. It fails SAFE, and `tests/unit/standard-pin-floor.test.mjs` now pins that on the `tests/fixtures/audit-corpus/pin-abuse` fixture for both a garbage pin (`"banana"`) and a pin AHEAD of the toolkit (`"1.0"`): tier none, exit 1, 12 errors, zero downgrades, identical to pinning the current Standard. The issue there is honesty rather than exploitation: the badge prints a version string that does not exist while the plugin is graded against something other than what it declared.
+- **Why a floor is contested rather than obvious.** A pin exists so that adding a rule does not fail existing adopters overnight, and that is a promise. Bounding it is a second promise about how long the first one lasts, and the two have to be stated together or the mechanism stops being trustworthy.
+- **Blocked on D-02**, which is downstream of D-01: whether a stale pin surfaces as a debt figure on the badge depends on whether the badge gains a second number at all.
+- **Status:** OPEN, ADR-gated on D-02, unversioned.
+
+### E63 - `U5` rewards a template, so the one quality-shaped check measures the wrong thing  [design, effort M, ADR-gated, overlaps E44]
+
+- **Target:** `scripts/checks/description-score.mjs` (`U5`), Standard sec 8.1.
+- **Found by:** the 2026-09-04 external audit (its `F-002`), on a labelled set of twenty descriptions written blind to the check.
+- **The finding.** Ten deliberately excellent and ten deliberately useless descriptions: `U5` passes **2 of the good ones and 8 of the bad ones**. It detects the literal phrase `Use when the user` plus one verb stem from a forty-item list, and penalises nothing that matters. An author who learns to satisfy it has learned the template, not the skill.
+- **What was already fixed, and what was NOT.** The audit's companion finding - that moving the threshold from 0.7 to 0.1 failed no test - was closed on 2026-09-09 with five tests, two of which independently go red under that edit. **That made the check tamper-evident. It did not make it correct.** This entry is the correctness half and is still fully open.
+- **The evidence is not yet reproducible in-tree.** The twenty labelled descriptions live in the audit's `corpus/u5-calibration.mjs`, which is gitignored. Until they are extracted as a fixture, the precision figure is an assertion nobody here can re-run - and no future improvement to the check can be shown to be an improvement.
+- **The proposal** retires the 0-to-1 score and its bar, reports per-skill structure facts in the inventory instead (has a what-clause, has a when-clause, word count, duplicate of a sibling, language readable), warns only on the objective ones, and moves judgment to an advisory layer with a written rubric. It migrates in three steps and **the exit code never changes at any step**, because `U5` is warn-level in every profile.
+- **Related and NOT the same question:** [E44 (`U5` should key off invocation control)](#e44---u5-should-key-off-invocation-control-not-component-type) asks WHICH components the bar applies to; this asks whether the bar measures anything. Both end in changing `U5`; neither answers the other.
+- **Blocked on D-03.** Recommended first step, which is unblocked and cheap: extract the calibration set as a tracked fixture so the claim becomes re-runnable.
+- **Status:** OPEN, ADR-gated on D-03, unversioned.
+
+### E64 - `G2` reads workflow TEXT, so four ways CI can fail while the check passes  [correctness, effort M, found by the 2026-09-04 audit]
+
+- **Target:** `scripts/checks/self-hosting.mjs` (`G2`).
+- **Found by:** the 2026-09-04 external audit (its `F-005`), which built a fixture per case.
+- **What `G2` claims.** A Gold requirement: the plugin ships self-hosting CI that runs the tier-applicable gate and passes it. **What it verifies** is that certain text appears in a workflow file.
+- **One of five gaps is closed.** Cut 4 (PR #314) made `G2` credit an EXECUTED gate rather than a mention, so a workflow that merely prints the command in an `echo` no longer counts. That fix's own docblock lists what remains, which is why this entry exists rather than a claim that `G2` is fixed.
+- **The four still open**, each a way CI can be green, absent or irrelevant while `G2` passes:
+  1. **The exit code is swallowed** - the gate runs, fails, and a trailing `|| true` or a captured status means the job succeeds anyway.
+  2. **The trigger is dispatch-only** - the workflow exists and never runs on a push or a pull request, so no change is ever graded.
+  3. **The job is disabled** - `if: false` on the job, or `continue-on-error` on the step, neither of which the pattern can see.
+  4. **A different directory is graded** - the gate runs against a path that is not the plugin.
+- **Why this is not a quick fix.** The remedy is to PARSE the workflow rather than pattern-match it: require a `push` or `pull_request` trigger, require a step that invokes the gate without `continue-on-error` or a shell OR-fallback, and require no `if: false` on the job. That is a different kind of check, and it will need a warn-first window because it can only ever ADD findings to plugins that pass today.
+- **One thing the fix must NOT claim.** Whether a plugin's CI is actually GREEN is out of scope for an offline grader, and the Standard should say so rather than leaving the requirement's wording to imply otherwise. A parser can prove the workflow is shaped to run and block; it cannot prove it ran.
+- **Blast radius will be real and must be measured first.** Every family member ships CI that `G2` passes today, and a parser strict enough to catch case 3 is strict enough to fire on a legitimate matrix or reusable-workflow shape. The `RS-B3` precedent applies directly: the FIRST version of that tightening was a false positive, caught only by grading all six members before and after.
+- **Status:** OPEN, unversioned.
+
+### E60 - a dependency bump can land a false supply-chain label, because `action-pin-watch` runs only at release  [correctness, effort S, found finishing cut 4]
+
+- **Target:** `.github/workflows/ci.yml` (which job runs `scripts/action-pin-watch.mjs`), not the script itself - the script works correctly and is what found this.
+- **Found by:** running `npm run release-ready` on 2026-09-05 while finishing cut 4. It blocked on 5 label problems, and those problems were **already on `main`**, not introduced by the cut.
+- **What happened.** [PR #303](https://github.com/product-on-purpose/agent-skills-toolkit/pull/303), a dependabot group bump merged 2026-09-04, advanced four `github/codeql-action` pins and one `softprops/action-gh-release` pin **and left every version comment untouched**:
+
+  ```diff
+  - uses: github/codeql-action/init@ff2f1c621b7f... # v4.37.7 pinned 2026-08-16
+  + uses: github/codeql-action/init@cdf488f595d8... # v4.37.7 pinned 2026-08-16
+  ```
+
+  The new SHA is **v4.37.9**, verified independently by resolving the tag through the GitHub API rather than by trusting the watcher. So for a day, `main` asserted in its own workflow files that it was running a version it was not running. The labels are corrected in the cut 4 branch; **this entry is about the hole that let it land, not about the labels.**
+- **Why nothing caught it.** `action-pin-watch` is a `release-ready` gate. `release-ready` runs when a release is being cut, so a pull request can merge a false label and the repository carries it until the next release attempt. Every other claim guard in this repository - `check-doc-enumerations`, `check-readme-version`, `check-claim-citations` - runs in `npm test` and therefore on every pull request. **Corrected 2026-09-18: this list also named `check-release-counts`, and that was never true at any commit.** `git log -p -- package.json` shows that up to `fabb38a` the `test` script had gained only those three, in that order - and the guard named at the end of this note is the fourth, added by the change that found this, so do not read the sentence as a claim that the list is still three long. `check-release-counts` does not run in `npm test`; `scripts/lib/release-ready.mjs` runs it as a `release-ready` gate, which puts it on the SAME release-time side of this contrast as `action-pin-watch` - and `scripts/README.md` already described it as a "release-time" guard while this line said otherwise. Keeping it out of the unit suite is a decision rather than an impossibility: E27 (the release-time stated-test-count gate), above in this file, records it as wired to the release gate and deliberately not to `npm test`. So the hole this entry describes is **two guards wide, not one**, and the false name made the entry's own argument look better measured than it was. Guarded from 2026-09-18 by `scripts/check-stale-state.mjs`, which is what found it.
+- **Why this one is worse than a stale doc count.** A pin comment is the only half of a SHA pin a human reviewer reads. Nobody verifies 40 hex characters by eye; they read `# v4.37.7` and believe it. A wrong label is a false statement about this repository's own supply chain, sitting in the file a security reviewer would audit first. It is the same class as [ADR 0053 (a pin label is a claim, and behind is not a defect)](../decisions/0053-a-pin-label-is-a-claim-and-behind-is-not-a-defect.md), which ruled precisely that a label stating a fact is making a claim.
+- **The fix, and the reason it is not simply "move it into `npm test`".** `action-pin-watch` resolves tags over the network, so putting it in the unit suite makes every local `npm test` and every CI leg depend on `api.github.com` - and the `#310` lesson is that a network dependency inside a required check is how an outage skips the suite. **Recommended shape:** a separate pull-request job, not a step inside `validate`, exiting 2 (advisory) when the registry cannot be read and 1 only on a genuine label disagreement - exactly the split `audit-deps`, `vendor-watch` and `action-pin-watch` already make. A cheaper alternative worth measuring first: run it only when the diff touches `.github/workflows/**`, which is the only way a label can drift.
+- **Also worth checking when this is picked up:** whether dependabot can be configured to rewrite the version comment it invalidates. If it can, that closes the cause rather than adding a second detector, and this entry becomes a much smaller change.
+- **Status:** OPEN, unversioned. The labels themselves are fixed in cut 4; the detection gap is not.
+### E59 - model the marketplace `relevance` block, or keep the dated no  [policy, effort S, population currently ZERO, opened by RS-C4]
+
+- **Target:** `scripts/checks/catalogue-manifest-shape.mjs` (`U17`) if it is ever modelled, or the marketplace scope more broadly. Vendor page: `https://code.claude.com/docs/en/plugin-relevance`, read 2026-09-05 at Claude Code `2.1.261`.
+- **Found by:** the RS-C4 Claude Code re-survey, 2026-09-05. The record had been surveyed through `2.1.235` on 2026-08-18; the vendor was 26 versions ahead.
+- **What the block is.** A `relevance` object on a marketplace plugin entry, carrying a `topic` string and a `signals` map of `cwd`, `cli`, `hosts`, `filesRead` and `manifestDeps` matchers. When a signal matches the session, Claude Code offers the plugin as a spinner tip, a session-start notification, or a pin in the `/plugin` Discover tab.
+- **The ruling is a DATED NO, and the survey found a better reason for it than the one the item was opened with.** RS-C4 expected the reason to be "the vendor's own validator already checks the block, so toolkit duplication buys little". That is true and is now quoted: *"Run `claude plugin validate` against your marketplace directory to check the `relevance` block before publishing"*, and the validator *"reports unknown keys under `relevance` and `relevance.signals` as warnings, flags a `relevance` value that is not an object, and rejects a `signals.hosts` entry that includes a scheme, port, or path."* **But the stronger fact is that the block is INERT by default.** The vendor states: *"No marketplace's `relevance` declarations produce suggestions until an administrator adds it to the allowlist, including the official Anthropic marketplace."* A block on a marketplace that no enterprise administrator has allowlisted in managed settings does nothing at all, so a toolkit check would be grading a field whose effect is off for every plugin this project can currently see.
+- **Third fact, and it removes the failure mode a check would exist to prevent:** *"Claude Code ignores unknown fields under `relevance` and `relevance.signals` at load time, so older clients continue to load your marketplace."* A malformed block degrades rather than breaking the manifest, so this is not the silent-drop class that earns a numbered check (contrast `U18`, where the vendor deletes the component).
+- **The measured population is ZERO, and the measurement is small enough to state honestly.** Across every marketplace manifest reachable on 2026-09-05 - the `agent-plugins` catalogue (6 plugin entries) and `pm-skills` (1 entry), plus the vendor-watch probes fixture - **7 plugin entries, 0 carrying a `relevance` block.** That is a much thinner corpus than the 2435 skills behind [E44 (`U5` should key off invocation control)](#e44---u5-should-key-off-invocation-control-not-component-type), and the precedent's evidentiary weight does not transfer; the zero is real but it is a zero over seven.
+- **The re-measurement instrument, named so this is a deferral and not a permanent no:** grep every reachable `.claude-plugin/marketplace.json` for `"relevance"` - the family via `scripts/gen-family-registry.mjs`'s member checkouts at the catalogue's pins, plus any graded cohort. The watcher that re-runs it is the next Claude Code vendor survey, which `foundation/sources/claude-code.md` now carries as a standing line.
+- **The trigger that reopens this:** the first family member or graded-cohort marketplace that ships a `relevance` block, OR the maintainer allowlisting a marketplace in managed settings so the field stops being inert. Either makes the population non-zero and turns this into an ADR.
+- **If it is ever modelled:** a warn-first shape check under `U17` (`catalogue-manifest-shape`)'s umbrella via a scope-extension ADR, never a new numbered requirement - a catalogue-level finding is not a plugin requirement (ADR 0051, the unilateral-remedy test).
+- **Verified NOT a latent false-FAIL** (carried forward from the 2026-08-31 measurement and unchanged by this survey): a fixture catalogue carrying a full relevance block runs through `scripts/evaluate.mjs --json` byte-identically to one without it, 0 collection errors and 0 collection warnings. This is a coverage gap, not a check that reds on a valid manifest.
+- **Status:** OPEN, dated no recorded 2026-09-05, population zero over 7 entries, instrument and trigger named above.
 ### E55 - check-parity's pin read fails open, and its pin-skew section cannot affect the exit code  [correctness, effort S, found by the v1.16.0 false-PASS lens]
 
 - **Target:** `scripts/check-parity.mjs`.
@@ -720,3 +802,163 @@ One entry, from the adoption-system proposals reviewed on 2026-08-20. Given its 
 - **Cost beyond the skill itself, so it is not underestimated:** a new catalogue entry, samples, and eval coverage, per the standing pattern for any new component.
 - **Source material:** the full proposal is `_local/onboarding/02-proposal-askit-onboard-skill.md`, written in why-gate shape so it can be promoted verbatim. **It is gitignored and is not a followable link from this file.**
 - **Status:** backlog, green-lit, unversioned. **Deliberately carries no version**, per the v1.15.0 lesson that assigning a line a version it will not get is how it goes stale unnoticed.
+
+
+## Dogfooding intake: critique-skills authoring-skills pass (2026-09-15)
+
+Raised while ruling critique-skills' own E11, which asked whether to adopt the 2026-08-02 mandate to
+build that repository's v0.2.0 components through this toolkit's `askit-*` authoring skills. The
+ruling was **adopt**, scoped to `askit-build-skill` and `askit-evaluate`, in the fallback mode the
+mandate itself defines (reading `SKILL.md` from a sibling checkout, because the plugin is not
+installed at user scope). These two findings are the mandate's own backlog, filed as it requires.
+
+**The honest framing, because it is the useful part.** This toolkit's **validator** half is adopted
+and load-bearing in critique-skills: it runs on every push and produces that repository's
+conformance claim. Its **authoring** half has **zero uses, ever**, there. The mandate to use it was
+written on 2026-08-02 and has been broken at every opportunity since, by agents that had it in
+context. That is not primarily a discipline failure, and reading it as one would waste the signal.
+
+### E65 - a repo built a 61-item backlog with ten bespoke agents while `askit-backlog` sat unused  [adoption, effort M]
+
+- **Target:** `skills/askit-backlog/SKILL.md`, and the discoverability question underneath it.
+- **What happened:** on 2026-09-14 critique-skills built `docs/internal/backlog/` from nothing: 61
+  enhancement items plus 4 component proposals, produced by **ten purpose-written agents sweeping
+  eight evidence surfaces**, 81 raw candidates deduplicated to 64, with a completeness critic
+  re-opening cited files afterwards. `askit-backlog` exists, was in the sibling checkout the whole
+  time, and was never opened.
+- **Why it matters more than one missed invocation:** the agent doing that work had the dogfooding
+  mandate in its context and still did not reach for the skill. **A skill that loses to
+  ten-agents-from-scratch, in its own family, with a standing mandate to use it, has a
+  discoverability or a perceived-fit problem**, and the ten-agent output is a natural baseline to
+  measure against.
+- **What would actually settle it:** run `askit-backlog` over the same eight evidence surfaces and
+  diff its output against the 61 committed items. Either it recovers most of them, and the finding
+  is discoverability, or it does not, and the finding is scope. **Both are worth knowing and neither
+  is known today.**
+- **Mode:** fallback (sibling checkout, plugin not installed at user scope), so this says nothing
+  about triggering or packaging. A skill never invoked cannot fail to trigger.
+- **Status:** backlog (recorded 2026-09-15, from critique-skills).
+
+### E66 - `askit-decision` was not used for an ADR in a repo whose ADR discipline is a standing track  [adoption, effort S]
+
+- **Target:** `skills/askit-decision/SKILL.md`.
+- **What happened:** critique-skills wrote ADR 0034 (the v0.1.x exit-gate declaration) by hand on
+  2026-09-14, under the same mandate, in a repository whose own standing tracks require an ADR for
+  every load-bearing decision in MADR format. That is the single most favourable case
+  `askit-decision` could be handed, and it still was not reached for.
+- **The likely reason, offered as a hypothesis and not a conclusion:** ADR 0034 is an unusual
+  document. Most of its work is refusing to declare something, and it rules a sub-question (whether
+  a site-guard defect resets the exit-gate clock) on the record while the answer was still free. If
+  `askit-decision` is shaped around deciding rather than around **declining to decide and saying
+  why**, that is a content gap worth naming rather than an adoption one.
+- **What would settle it:** hand `askit-decision` ADR 0034's inputs and compare. The ADR is public
+  in critique-skills at `docs/internal/decisions/0034-v0.1.x-exit-gate-declaration.md`.
+- **Status:** backlog (recorded 2026-09-15, from critique-skills).
+
+**What critique-skills is doing next, so this intake has a follow-up rather than a filing.**
+`critique-forms` is the next skill it builds and will be built through `askit-build-skill` in
+fallback mode, with `askit-evaluate` run against the trigger eval sets, which that repository
+records as never having been through a grader. Friction from that build lands here as it occurs.
+
+## House-clause open questions (2026-09-18)
+
+Opened by the B-09 pass, which corrected five check overclaims after reproducing each. Two of B-09's
+named targets, `G1` and `G3`, turned out not to be check overclaims at all: both describe what they
+measure accurately, and it is `STANDARD.md`'s clauses for those two items that promise more than the
+checks look for. Correcting a check's wording cannot close either one, because the mismatch is between the Standard
+and the spine.
+
+**These are OPEN QUESTIONS, not rulings.** Whether the clause weakens or the check strengthens is the
+maintainer's call, and nothing here recommends either. They carry `HC-` numbers rather than `E-` numbers
+because they ask what a house clause should say rather than propose a change to a component. The series
+starts at 07 and 08 because [`docs/reference/standard-coverage.md`](../../reference/standard-coverage.md)
+and [`audit-intake.md`](../audit-intake.md) already cite those two numbers, and a reference a published
+page carries has to resolve to something.
+
+### HC-07 - `G3`'s clause promises CI execution the check never looks for  [open question, ADR-gated]
+
+- **The clause:** `STANDARD.md` sec 2.6 `G3` - "Each chain contract and each hook has at least one
+  eval/regression case; **CI executes them**; a regression check confirms that changing one component
+  does not silently break a chained consumer or a hook. The bar is structural + behavioral *presence and
+  execution*."
+- **What the check does:** `G3` verifies that an eval set under `evals/` declares each chain edge and
+  each hook event, plus the stale-edge signal. **Nothing executes a case**, in this repository or in a
+  graded plugin. Recorded on the sec 8.3 row of
+  [`docs/reference/standard-coverage.md`](../../reference/standard-coverage.md).
+- **The open question:** does `G3`'s clause drop "CI executes them" and "execution", or does the check
+  gain a way to observe a run? Both are Standard-affecting and neither is ruled.
+- **Not a check defect.** `G3`'s own module text was tested during B-09 and found accurate; this is the
+  clause overreaching the check, not the check overclaiming.
+- **Status:** open (recorded 2026-09-18).
+
+### HC-08 - `G1`'s clause requires hook scope and failure behaviour the check never reads  [open question, ADR-gated]
+
+- **The clause:** `STANDARD.md` sec 2.6 `G1` - "Every hook present documents its event, trigger, matcher
+  (if applicable), **scope, and failure behavior** (3.5)." Sec 3.5's Rules line carries the same list:
+  "each hook MUST document its event, trigger, scope, and failure behavior."
+- **What the check does:** `hook-documentation.mjs` enforces a `type` per action and a `matcher` for the
+  tool-matched events. Its own docblock says the fuller scope/failure narrative "lives in the hook
+  component's docs" - it is not read. Recorded on the sec 3.5 row of
+  [`docs/reference/standard-coverage.md`](../../reference/standard-coverage.md).
+- **The open question:** does `G1`'s clause drop scope and failure behaviour, or does the check gain a
+  way to find them? A free-prose narrative is not obviously machine-checkable, which is what makes this
+  a question rather than a defect.
+- **Not a check defect.** `G1`'s own module text was tested during B-09 and found accurate.
+- **Status:** open (recorded 2026-09-18).
+
+### E67 - the Standard REQUIRED a co-located `HISTORY.md` per component at Silver+, this repo is Gold with 35 components and zero of them, and nothing caught it  [RESOLVED 2026-09-20, Standard 0.17]
+
+- **RESOLVED by route B, the demotion.** At Standard 0.17 the clause reads SHOULD rather than MUST, and both `tooling enforces this` parentheticals are deleted. Chosen over writing 35 files because a requirement its own author violated 35 times for months, uncaught, is a SHOULD that was mislabelled - and writing 35 files to satisfy a rule is the file-shape-over-substance failure E61 exists to name. The record below is left as written, because it is what was measured.
+
+- **Target:** `STANDARD.md` sec 2.5 and sec 3.10, or a new check. Which one is the decision.
+- **Measured 2026-09-19, five facts, each run rather than read:**
+  - `STANDARD.md:318` - "Each component MUST carry its current `version` ... and MUST maintain dated change notes in a **co-located history file** (`HISTORY.md` beside the component) **at Silver and above**". `STANDARD.md:199` says the same: "REQUIRED at Silver+".
+  - `library.json` declares `tier: advanced`, which is above Silver.
+  - The repository declares **35 components**: 26 skills, 7 subagents, 2 commands.
+  - `find . -name 'HISTORY.md'` outside `node_modules`, `_local` and `.git` returns **0**. No alternative history-shaped file exists beside any component either.
+  - `node scripts/check.mjs .` reports **Tier: Advanced, 0 errors, 0 warnings**.
+- **So the toolkit fails its own Standard 35 times and its own gate says it is Gold.** This is E61's finding (the tier certifies file shape) turned on the grader itself, and it is worse than E61's case in one respect: E61's Potemkin plugin was a constructed fixture, and this is the repository the badge is published for.
+- **Two sentences in the Standard claim the opposite, and both are false.** `STANDARD.md:199` carries "(tooling enforces agreement when present)" and `:318` carries "(tooling enforces this)". **No module under `scripts/checks/` reads a component `HISTORY.md` at all** - `grep -rln 'HISTORY' scripts/checks/` returns nothing, so there is no cap, no migration window and no partial coverage to qualify. The three `scripts/` hits for "HISTORY" are `check-readme-version`, `check-stale-state` and `gen-standard-coverage`, and all three mean CHANGELOG-class historical records, not a component's history file. That was checked rather than assumed, because the filename collision makes a grep look like coverage.
+- **The decision, which is NOT made here.** Three routes and they are not equal:
+  1. **Write 35 `HISTORY.md` files and add a check.** Honest, and the check is a Standard tightening needing a revision - Standard 0.18 at the earliest, since 0.17 is graduations-only.
+  2. **Demote the clause to SHOULD** and delete both false parentheticals. Cheapest, and it is what the repository's own practice has been saying for its entire life.
+  3. **Keep the MUST and mark it a stated gap**, per ADR 0059's third disposition, deleting the parentheticals either way.
+- **The parentheticals should be deleted regardless of which route is taken**, under the standing rule that a false claim is removed before surface area is added. That half needs no revision - it removes a promise rather than making one.
+- **Found while verifying somebody else's claim, which is the part worth recording.** A triage agent asserted the Standard carries "three false tooling parentheticals" in its gap rows. Checking that found two parentheticals of that shape (`:199`, `:318`) and one clause of a different shape (`:519`, "Tooling MUST warn when it detects a plugin embedding a self-listing marketplace"), so the count was wrong. Verifying the two that were real is what surfaced the 35-component violation behind them. The triage's other claims did not survive review and the triage was discarded; this entry is the one durable thing it led to.
+
+### E68 - `resolve-bash` leaks a probe directory on force-kill at ~3 percent, and the obvious cause is ruled out  [correctness, effort M]
+
+- **Target:** `tests/unit/_resolve-bash.mjs`, the `finally` block around line 573.
+- **Measured 2026-09-19, not inferred:** 30 runs of `tests/unit/resolve-bash.test.mjs` gave 29 pass, 1 fail. A second independent 40-run loop failed on run 12; a third failed on run 7. Call it 3 percent, one run in thirty.
+- **The failing assertion, captured verbatim rather than described:**
+  `not ok 6 - write-then-hang: a candidate that produces correct output but then hangs is rejected within a bounded time, and its process tree is actually killed`
+  `the probe directory must be removed even when the candidate had to be force-killed; leaked: ["askit-bash-probe-8rd9nq"]`
+- **It is NOT a timeout, and three separate reviews said it was.** Each called it "a wall-clock timing assertion, timing-sensitive, not chased" - an inference from the test's TITLE, which does contain a time bound. Nobody had captured a failing run. One loop-until-failure gave the real answer in twelve runs: the time bound passes and the CLEANUP assertion fails.
+- **The obvious cause is RULED OUT, by trying it.** The natural reading is a Windows handle race: the force-killed process has not released its handle when `rmSync` runs, and Windows refuses to remove a directory that still has one. `force: true` suppresses ENOENT and does not retry EBUSY, so `maxRetries: 10, retryDelay: 50` should fix it. **It does not.** With the retry in place, 30 runs gave 28 pass and 2 fail, and a capture on run 7 showed the SAME assertion and the same leak. The change was reverted; nothing of it is in the tree.
+- **What that leaves.** Something other than a retry-able busy handle keeps the directory alive, or recreates it, or the `finally` is not reached on that path. Candidates not yet tested: whether `rmSync` throws and the exception is swallowed, whether the killed tree recreates the directory after cleanup, and whether the leaked directory is even the one this `finally` owns - the test counts ALL `askit-bash-probe-*` entries in `tmpdir()`, not one path.
+- **Why it matters beyond the suite.** The same `finally` runs in production when the toolkit force-kills a hung bash candidate, so this is a real temp-directory leak, not only a test annoyance. It is small and self-limiting, which is why this is effort M and not a stop-the-line item.
+- **It is invisible to CI.** The test is Windows-only and skips on the Linux legs, so only a local Windows run can see it. That is also why it survived this long.
+- **The honest stopping point.** Two diagnoses were attempted and one was falsified by measurement. This repository's own rule is that after three attempts the problem is ill-posed; a third guess without a new instrument would be the wrong move. The next person should start by making `rmSync` report rather than by proposing a fix.
+
+### HC-09 - `G2`'s clause promised a passing CI the check cannot observe  [RULED 2026-09-20, Standard 0.17]
+
+- **The clause, as it read through Standard 0.16:** sec 2.6 `G2` - "**Self-hosting CI that passes.** The plugin ships CI that runs the full tier-applicable check suite via the portable scripts (Section 4) **and passes it**. 'Self-hosting' = the plugin passes its own validators." The verification column read "CI green + self-hosting check".
+- **What the check actually does:** `scripts/checks/self-hosting.mjs` runs four regular expressions over workflow TEXT. No network, no CI API, no run history. It cannot observe a run, a trigger firing, or whether CI is green. Proven by reading the module rather than by mutation, because the absence of a network call is not something a fixture can demonstrate.
+- **RULED: weaken the clause.** At Standard 0.17 `G2` reads "Self-hosting CI that **invokes** the gate", and the verification column names workflow text explicitly and says it is NOT a live CI result.
+- **Strengthening the check was considered and REFUSED.** Making the gate query a CI provider would make two people grading the same commit get different answers - the run could be green, red, queued, or the API could be down - and a deterministic offline grader is the property this whole toolkit sells. A relaxation can never make a passing plugin fail (sec 7.7), which is why it needs no migration window and could ride the graduations cut.
+- **This is NOT `HC-08`, and an earlier draft of the 0.17 note said it was.** `HC-07` is `G3`'s CI-execution promise and `HC-08` is `G1`'s hook scope-and-failure-behaviour requirement; **both remain open.** The `G2` gap had no number until this entry. The misattribution was caught by reading the two backlog entries before marking one ruled, which is the only reason it did not ship into a normative document.
+- **The same question is still open twice.** `HC-07` and `HC-08` are the identical shape - a clause promising what its check never reads - and each needs its own ruling. The precedent this entry sets is *weaken the clause where the honest check is the right check, strengthen the check where the property is statically legible*; on that reading `HC-07` (did anything execute the evals) is a candidate for strengthening rather than weakening, since a workflow that invokes the eval runner is visible in the same text `G2` already parses.
+
+### E69 - LAYER-DISC is adopted on four of seven explanation pages, and the house style contract does not mention it  [docs, effort S]
+
+- **Target:** the three unconverted pages, and `skills/askit-build-docs/references/style-contract.md`.
+- **What shipped.** Issue #299 ruled: adopt LAYER-DISC for the genuinely explanatory pages, and say plainly that the rest are a different kind of page. Four converted - `architecture.md`, `architecture-internals.md`, `conformance-and-tiers.md`, `validation-and-improvement.md`. Measured with `npm run doc-style`: debt 61 to 6, 40 to 7, 32 to 32, 15 to 9.
+- **Five pages are exempt by kind and that was the ruling, not an omission:** the folder `README.md` (required by `G8`), `document-map.md` and `reading-paths.md` (navigation), `faq.md` (question-indexed), `glossary.md` (term-indexed). A top-to-bottom reading template fits none of them.
+- **Three of the seven in scope were NOT converted, and only one has a stated reason.**
+  - `comparison.md` - **legitimately skipped, and the page says so itself** at line 10: "It is split deliberately into two parts: a neutral, sourced matrix ... and a separately-labelled 'where askit fits' read." A three-depth template would cut across a two-part structure the page declares in its own prose. This is the "if it does not fit, say so" outcome the brief allowed.
+  - `limitations.md` - **no rationale given.** Untouched, byte-identical to main.
+  - `why-a-standard.md` - **no rationale given.** Untouched, byte-identical to main. It is the most argumentative page and was flagged in advance as the one LAYER-DISC might fit least, so a genuine misfit is plausible - but nobody said so, and an unexplained skip is not the same as a reasoned exemption.
+- **THE STRUCTURE IS ADOPTED IN PAGES AND GOVERNED NOWHERE.** `skills/askit-build-docs/references/style-contract.md` contains no occurrence of GLANCE, FULL, EXPERT, LAYER-DISC or "three depths". Its Layer 3 still names `architecture-internals.md` as the exemplar and tells writers to read its opening - which is now a GLANCE block the contract never describes. **A house structure that only four pages follow, with nothing telling the next author it exists, decays to noise.** This is the half that makes the other half durable.
+- **The closing section now ships under three names:** `## Where to go next` (architecture, architecture-internals), `## See also` (validation-and-improvement), and a newly introduced `## Related` (conformance-and-tiers). Pick one.
+- **Two pages wear the template rather than fit it**, per the adversarial review: `architecture-internals.md`'s GLANCE is its own table of contents rather than a summary, and `architecture.md`'s EXPERT is six headings over roughly ten sentences. Neither is a fact problem; both are a judgement call about whether the depth is real.
+- **Verification that did hold, recorded because it is the expensive part.** Zero facts changed on any page, proven with order-independent MULTISET diffs of code spans, links, numbers, reqIds, paths and URLs, a modal/negation multiset (a dropped "not" is invisible to `sort -u`), and a novel-sentence scan. **The site was BUILT and `STRICT_ANCHORS=1` run against it** - 90 pages, 0 broken anchors - because the anchor check is invisible to `npm test`. Independently re-confirmed here: 0 numbers removed and 0 words lost across all four pages.

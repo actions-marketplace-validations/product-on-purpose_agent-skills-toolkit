@@ -504,6 +504,51 @@ test("skillCollisions / commandCollisions: the union, not any single member, is 
   assert.match(c[0].message, /command "ship"/);
 });
 
+/**
+ * ADR 0060. This test exists because changing the severity was INVISIBLE to the suite.
+ *
+ * The test above pins the count and the message shape and says nothing about severity, so when the
+ * 2026-09-17 probe re-run forced these two findings from `error` down to `warn`, 1575 tests passed
+ * unchanged. A severity is the whole difference between a gate that fails a catalogue and a gate that
+ * advises it, and "a guard that cannot be shown failing is not a guard" applies to the guard's own
+ * severity as much as to its detection.
+ *
+ * The message assertions are the load-bearing half. The old text claimed the members "occupy one name
+ * in a shared pool, and which one wins is undefined" - and on Claude Code 2.1.275 nothing wins, the
+ * bare name is refused outright. A false mechanism shipped inside a true detection is the exact defect
+ * this project grades other tools on, so the absence of that sentence is asserted rather than assumed.
+ */
+test("skill and command collisions are WARN and never claim a silent winner (ADR 0060)", () => {
+  const members = [
+    { status: "resolved", dir: "/x/a", entry: entry("a", 0), skillNames: ["review"], commandNames: ["ship"] },
+    { status: "resolved", dir: "/x/b", entry: entry("b", 1), skillNames: ["review"], commandNames: ["ship"] },
+  ];
+
+  for (const f of [...skillCollisions(members), ...commandCollisions(members)]) {
+    assert.equal(
+      f.severity,
+      "warn",
+      "ADR 0060 downgraded these from error: the runtime now REFUSES a colliding bare name rather than resolving it silently, so the harm is loud and recoverable rather than silent"
+    );
+
+    // The retired claim, asserted absent. Restoring any of this wording reverses ADR 0060's ruling
+    // rather than editing a string, which is why it fails here.
+    assert.doesNotMatch(f.message, /which one wins is undefined/, "nothing wins - the bare name is refused");
+    assert.doesNotMatch(f.message, /shared pool/, "the shared-pool mechanism is what the 2026-09-17 probe falsified on Claude Code");
+
+    // What the finding must say instead: the measured behaviour, dated, and the gap named.
+    assert.match(f.message, /cannot use the bare name/, "the finding states the cost a consumer actually pays");
+    assert.match(f.message, /2\.1\.275/, "the measurement is version-bound, because a runtime behaviour without a version is not re-checkable");
+    assert.match(f.message, /Codex is unmeasured/, "the honest gap: only Claude Code was measured, and Codex is the other emit target");
+  }
+
+  // Still off the spine. ADR 0051's UNILATERAL-REMEDY TEST is untouched by a severity change: neither
+  // member can fix a collision alone, so it can never become a numbered requirement whatever its level.
+  for (const f of [...skillCollisions(members), ...commandCollisions(members)]) {
+    assert.equal(f.reqId, null, "a cross-member finding stays off the spine regardless of severity (ADR 0051)");
+  }
+});
+
 test("agentRestrictedFields (A6): a plugin-shipped agent declaring hooks/mcpServers/permissionMode warns, quoting the vendor", () => {
   const members = [{
     status: "resolved", dir: "/x/a", entry: entry("a", 0),
@@ -517,7 +562,7 @@ test("agentRestrictedFields (A6): a plugin-shipped agent declaring hooks/mcpServ
   assert.equal(f[0].severity, "warn", "A6 is warn-first and scope-local; graduating it is a Standard 0.13 tightening");
   assert.equal(f[0].reqId, null);
   assert.match(f[0].message, /`hooks`, `permissionMode`/);
-  assert.match(f[0].message, /not supported for plugin-shipped agents/);
+  assert.match(f[0].message, /For security reasons, plugin-shipped agents don't support/);
   assert.match(f[0].message, /code\.claude\.com/);
   assert.deepEqual([...PLUGIN_AGENT_UNSUPPORTED_FIELDS], ["hooks", "mcpServers", "permissionMode"]);
 });

@@ -1,0 +1,14 @@
+{
+  "name": "fx-self-consistency",
+  "version": "1.19.0",
+  "tier": "advanced",
+  "standard": "0.16",
+  "skills": [
+    {
+      "name": "fx-demo",
+      "path": "skills/fx-demo/SKILL.md",
+      "description": "A stale description, left behind when the skill frontmatter was edited and the generator was not re-run."
+    }
+  ],
+  "commands": []
+}

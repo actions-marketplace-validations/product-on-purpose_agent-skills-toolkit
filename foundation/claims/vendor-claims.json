@@ -31,34 +31,47 @@
     {
       "id": "cx-hooks",
       "vendor": "codex",
-      "url": "https://developers.openai.com/codex/hooks.md",
-      "note": "The Codex hook reference. Read 2026-08-22 and recorded in foundation/sources/codex.md; NO CLAIM IS PINNED AGAINST IT, deliberately. The eleven-event set exists on that page only as TABLE ROWS, and a table row pins rendering rather than prose - three such claims were landed and removed on 2026-08-22. The one prose sentence naming an event is about its TIMEOUT BUDGET, so pinning it would assert a default and a maximum while its dependsOn claimed it backed the event set: a page saying SessionEnd was REMOVED as a hook event, while keeping the timeout sentence, would still HOLD. Kept as a source so the URL and its reading date are recorded where the other surfaces are."
+      "url": "https://learn.chatgpt.com/docs/hooks.md",
+      "note": "The Codex hook reference. RE-READ 2026-09-04 (RS-C1): the old URL https://developers.openai.com/codex/hooks.md now 308-redirects here, the same migration the plugins page made on 2026-08-18, so the whole developers.openai.com/codex/* namespace is moving to learn.chatgpt.com/docs/*. The event count is now TWELVE (Interrupt is new since 2026-08-22). The EVENT ENUMERATION still carries no claim and never should: it exists as table rows, and a table row pins rendering rather than prose - three such claims were landed and removed on 2026-08-22. What DID become pinnable on this read is the HANDLER-TYPE sentence, which is running prose in a bullet rather than a cell: see cx-hook-handler-support, the first claim ever pinned against a Codex source."
     }
   ],
   "claims": [
     {
+      "id": "cx-hook-handler-support",
+      "kind": "quote",
+      "source": "cx-hooks",
+      "claim": "`command` and `mcp_tool` handlers are supported. `prompt` and `agent` handlers are parsed but skipped.",
+      "dependsOn": [
+        "G1 (hook-documentation) - the per-agent handler-type support table it gains at Standard 0.16",
+        "STANDARD.md sec 3.5, whose CX row states the supported and skipped handler types",
+        "the emit path: a plugin targeting Codex that ships a prompt- or agent-type hook gets a silent no-op, and this sentence is the only vendor statement that says so"
+      ],
+      "verifiedOn": "2026-09-04",
+      "onChange": "ASYMMETRIC. A handler type MOVING INTO the supported set is green-ward: widen the table, bump the read date, note it in CHANGELOG - nothing that was passing starts failing. A type moving OUT of the supported set, or a NEW type appearing as skipped, is red-ward: it makes a previously silent-but-working hook a silent no-op, so it needs a Standard minor with finding-level migration metadata rather than a constant edit. If the sentence disappears entirely, do NOT re-pin a neighbouring sentence to keep the run green - the absence is the finding, and Codex documenting handler support less clearly is itself the thing G1's table depends on."
+    },
+    {
       "id": "plugin-agent-unsupported-fields",
       "kind": "quote",
       "source": "cc-plugins-reference",
-      "claim": "For security reasons, hooks, mcpServers, and permissionMode are not supported for plugin-shipped agents",
+      "claim": "For security reasons, plugin-shipped agents don't support hooks, mcpServers, or permissionMode",
       "dependsOn": [
         "U14 (agent-restricted-fields) - the whole check",
         "the marketplace A6 reading, which imports the same field list",
-        "ADR 0045, and STANDARD.md sec 3.3"
+        "ADR 0045, and STANDARD.md sec 2.1 (the U14 bullet, which quotes this sentence verbatim)"
       ],
-      "verifiedOn": "2026-08-15",
+      "verifiedOn": "2026-09-16",
       "onChange": "ASYMMETRIC (ADR 0045). A field REMOVED from the unsupported list is green-ward - update the constant, bump the read date, note it in CHANGELOG. A field ADDED is red-ward: a new Standard minor with finding-level migration metadata, never a bump of U14's own since."
     },
     {
       "id": "plugin-agent-supported-fields",
       "kind": "quote",
       "source": "cc-plugins-reference",
-      "claim": "Plugin agents support name, description, model, effort, maxTurns, tools, disallowedTools, skills, memory, background, and isolation frontmatter fields.",
+      "claim": "Plugin agents support name, description, model, effort, maxTurns, tools, disallowedTools, skills, memory, background, [omitClaudeMd](/docs/en/sub-agents#supported-frontmatter-fields), and isolation frontmatter fields.",
       "dependsOn": [
         "PLUGIN_AGENT_SUPPORTED_FIELDS, quoted in every U14 finding as the remediation"
       ],
-      "verifiedOn": "2026-08-16",
-      "onChange": "Re-read the field list and update the constant. The list appears in user-facing remediation, so a stale one sends authors to a field the runtime does not accept."
+      "verifiedOn": "2026-09-16",
+      "onChange": "Re-read the field list and update the constant. The list appears in user-facing remediation, so a stale one sends authors to a field the runtime does not accept. THE MARKDOWN LINK IS LOAD-BEARING: the source serves text/markdown, and on 2026-09-16 the page linked omitClaudeMd to /docs/en/sub-agents#supported-frontmatter-fields. normalizeForMatch folds case, quotes, dashes, backticks, asterisks, underscores and whitespace, but NOT link syntax, so the bare field name does not match and this claim reports MISSING without the brackets. Measured, not assumed. If a future re-read finds the link gone or its target moved, store whatever the page then serves - and if that keeps recurring, the durable fix is to teach normalizeForMatch to fold [text](url) to text rather than to keep re-pinning a URL."
     },
     {
       "id": "commands-merged-into-skills",
@@ -120,7 +133,7 @@
         "the G8 exemption of agents/ from the meaningful-folder README requirement",
         "ADR 0046, and STANDARD.md sec 3.3"
       ],
-      "verifiedOn": "2026-08-24",
+      "verifiedOn": "2026-09-17",
       "reproduction": "Fixtures and step-by-step: docs/internal/vendor-watch/probes/agents-dir-registers-every-md/ (see EXPECTED.md for what each run observed, and probes/README.md for how to record the result). Install a plugin whose agents/ holds real-agent.md, README.md, _README.md and README.txt; list the registered subagents. Recorded in scripts/checks/folder-readme.mjs.",
       "onChange": "If the runtime starts EXCLUDING README.md or underscore-prefixed files, U15 loses its vendor grounding and becomes a house convention - which would change its provenance, and with it whether plain-plugin drops it."
     },
@@ -128,13 +141,15 @@
       "id": "components-share-one-namespace",
       "kind": "probe",
       "source": "cc-plugins-reference",
-      "claim": "Component names from different plugins enter a SHARED POOL on any agent that does not namespace components by plugin, so two members shipping the same skill directory name collide and which one wins is undefined.",
+      "claim": "On Claude Code 2.1.275, two installed plugins shipping the same skill name both keep it in their own inventory and the collision is REFUSED rather than resolved: the bare name returns a tool_use_error naming both plugin-qualified candidates. Measured 2026-09-17; resolution on Codex is unmeasured.",
       "dependsOn": [
-        "ADR 0051's stated reopening condition for marketplace-skill-collision and marketplace-command-collision"
+        "ADR 0051's stated reopening condition for marketplace-skill-collision and marketplace-command-collision",
+        "ADR 0060, which ruled the 2026-09-17 change a DOWNGRADE to warn rather than the retirement ADR 0051 anticipated",
+        "the severity and message of both collision findings in scripts/lib/marketplace/analyze.mjs"
       ],
-      "verifiedOn": "2026-08-24",
+      "verifiedOn": "2026-09-17",
       "reproduction": "Fixtures and step-by-step: docs/internal/vendor-watch/probes/components-share-one-namespace/ (see EXPECTED.md for what each run observed, and probes/README.md for how to record the result). Install two plugins shipping the same skill name and observe which resolves.",
-      "onChange": "If a runtime NAMESPACES components by plugin, the two collision classes should be RETIRED, not graduated - ADR 0051 says so explicitly. This is the one claim whose change makes the gate report LESS, not more."
+      "onChange": "SUPERSEDED IN PART BY ADR 0060, which is what happened when this actually changed. ADR 0051 said a namespacing runtime should RETIRE the two collision classes; the 2026-09-17 re-run found Claude Code namespacing LOUDLY - it refuses the bare name rather than resolving it silently - and the ruling was DOWNGRADE to warn, not retire. Two reasons that any future change must also clear: only CLAUDE CODE has been measured and Codex is the other emit target, and a refusal is a different harm rather than no harm. If Codex is measured and DOES share a namespace, the silent-winner harm is real there and the severity question reopens for Codex-targeting catalogues. If Claude Code reverts to silent resolution, both checks return to error. The instrument for either is the fixture pair at docs/internal/vendor-watch/probes/components-share-one-namespace/."
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "agent-skills-toolkit",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "description": "A deterministic, portable gate that grades an agent skill library (Claude Code and Codex plugins) against the Advanced Skill Library Standard and reports the Bronze/Silver/Gold tier it earns.",
   "license": "Apache-2.0",
   "homepage": "https://product-on-purpose.github.io/agent-skills-toolkit/",
@@ -59,11 +59,12 @@
     "!scripts/lib/release-notes-section.mjs",
     "!scripts/lib/fetch-members.mjs",
     "!scripts/lib/action-pin-watch.mjs",
+    "!scripts/lib/audit-report.mjs",
     "!scripts/lib/prose-metrics.mjs",
     "STANDARD.md"
   ],
   "scripts": {
-    "test": "node scripts/check-readme-version.mjs . && node scripts/check-doc-enumerations.mjs . && node scripts/check-claim-citations.mjs . && node --test",
+    "test": "node scripts/check-readme-version.mjs . && node scripts/check-doc-enumerations.mjs . && node scripts/check-claim-citations.mjs . && node scripts/check-stale-state.mjs . && node scripts/check-self-consistency.mjs . && node --test",
     "check": "node scripts/check.mjs",
     "tier-report": "node scripts/tier-report.mjs",
     "evaluate": "node scripts/evaluate.mjs",
@@ -73,6 +74,8 @@
     "action-pin-watch": "node scripts/action-pin-watch.mjs .",
     "release-counts": "node scripts/check-release-counts.mjs .",
     "doc-enumerations": "node scripts/check-doc-enumerations.mjs .",
+    "stale-state": "node scripts/check-stale-state.mjs .",
+    "self-consistency": "node scripts/check-self-consistency.mjs .",
     "doc-style": "node scripts/doc-style-report.mjs .",
     "release-ready": "node scripts/release-ready.mjs",
     "prepublishOnly": "npm test && node scripts/check.mjs"
