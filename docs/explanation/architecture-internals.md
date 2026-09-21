@@ -6,6 +6,12 @@ level: advanced
 doc-role: architecture-detailed
 ---
 
+> **Three depths below.** Stop at whichever one answers your question.
+
+---
+
+## GLANCE (90 seconds)
+
 This page is for someone extending or debugging `scripts/` who wants detail that matches the source rather than a summary. It assumes you have read [the architecture overview](./architecture.md) first.
 
 The **spine** is the 34 checks the toolkit ships, and this is the contributor-level walkthrough of how that spine is actually built. Coined terms like that one are defined in [the glossary](./glossary.md).
@@ -28,7 +34,11 @@ Everything here lives under `scripts/`. There are two entrypoints:
 
 Both run the same checks. Only the framing differs.
 
-## A check module's shape
+---
+
+## FULL (15 minutes)
+
+### A check module's shape
 
 A check is one small file that answers a single question about a plugin, such as "is there a valid `library.json` here". It hands back a list of the problems it found, and an empty list means the plugin passed that question.
 
@@ -72,7 +82,7 @@ A few checks are deliberate exceptions and read auxiliary files directly. `libra
 
 When a check does read a file, it wraps the read so a missing or malformed file becomes a finding rather than a thrown exception. A thrown exception in one check would abort the whole gate. That is why the pattern is "catch and report" rather than "let it throw."
 
-## The deterministic / no-model boundary
+### The deterministic / no-model boundary
 
 The gate never asks a language model anything. Given the same files it returns the same findings, on your machine and in CI, today and in a year.
 
@@ -97,7 +107,7 @@ That makes a design principle mechanical. The gate is a portable, reproducible f
 
 Judgment-based evaluation does exist, but it lives somewhere else. It is `askit-evaluate`'s behavioral and review modes, backed by the `askit-quality-grader` subagent. It sits beside the gate as opt-in evidence and never decides a pass or fail. The synchronous-array test is the wall between the two.
 
-## The check registry
+### The check registry
 
 The registry is the single place that knows which checks exist. Nothing scans `scripts/checks/` looking for modules, so a check file that is not listed in the registry simply does not run.
 
@@ -126,7 +136,7 @@ Adding a check is two edits. Write the module under `scripts/checks/`, then regi
 
 The registry order is the order findings appear in output. It has no effect on pass or fail, because every check runs and the results are flattened.
 
-## The tier registry and the burndown
+### The tier registry and the burndown
 
 Tiers and requirement-to-tier mapping live in `scripts/lib/tier.mjs`. It is deliberately tiny:
 
@@ -161,7 +171,7 @@ This is why the report is a worklist rather than a grade. The `blocked` array is
 
 The human one-liner comes from `humanLine(r)`. It reads `Tier: Advanced (no blockers detected)`, or `Tier: Silver (Gold blocked: 1 issue)`.
 
-### The declared-tier ceiling
+#### The declared-tier ceiling
 
 The gate's exit code is not "any error fails." It is "any error at or below the declared tier fails." `scripts/check.mjs` implements this in `gateExitFromFindings`:
 
@@ -181,7 +191,7 @@ A plugin that declares `tier: convergent` is *not* failed by a `G3` Gold error. 
 
 `scripts/evaluate.mjs` reuses the same `gateExitFromFindings`, so the `askit-evaluate` CLI and the gate CLI agree on pass/fail to the byte.
 
-### The Standard ceiling, and why checks stopped knowing their own history
+#### The Standard ceiling, and why checks stopped knowing their own history
 
 These are two different questions, and each has its own ceiling.
 
@@ -207,7 +217,7 @@ The ceiling is a ceiling and never a floor. A severity already at or below a cap
 
 It is also recorded only when it BINDS. A version condition that changes no outcome is not debt, and recording it anyway would print a due date for a finding that was never held.
 
-### The published-verdict trust step
+#### The published-verdict trust step
 
 `resolveFindings` runs four ordered steps: the profile, then per-rule override and suppression, then the trust step, then the ceiling.
 
@@ -219,7 +229,7 @@ This deliberately REVERSES a guarantee the resolver used to make, which was that
 
 [ADR 0044 (one Standard ceiling, and the deliberate published-verdict reversal)](../internal/decisions/0044-one-post-resolution-standard-ceiling-and-config-provenance.md) records that as a decision rather than as a consequence. A guarantee that protects the subject is the wrong guarantee in the one mode built to publish a verdict about the subject. Local mode is untouched, and a subject's own config remains authoritative about its own repository.
 
-## The load-plugin context (`ctx`)
+### The load-plugin context (`ctx`)
 
 `scripts/lib/load-plugin.mjs` reads the plugin once and hands every check the same immutable `ctx`. A check never re-reads what the loader already parsed. The returned object:
 
@@ -236,7 +246,7 @@ Frontmatter parsing runs once in the loader, via `scripts/lib/frontmatter.mjs`. 
 
 For the common case, the loader is the only place that touches component files. That keeps the checks pure, and it makes the whole run a single pass over the tree.
 
-## The generators and the drift checks
+### The generators and the drift checks
 
 Three artifacts are generated, never hand-authored, from the canonical `library.json` plus on-disk component frontmatter. The generators live in `scripts/generators/`; each exports a pure `render*(ctx)` function and has a small CLI wrapper.
 
@@ -264,7 +274,11 @@ The manifest entries are mirrored against frontmatter as well.
 
 That second one is what stops a frontmatter-only deprecation slipping past the `G6` deprecation contract.
 
-## The eval set format and `G3` library-regression
+---
+
+## EXPERT (reference detail)
+
+### The eval set format and `G3` library-regression
 
 Gold requires that every chain edge and every hook carry at least one eval or regression case that CI executes, so changing one component cannot silently break a chained consumer or a hook (Standard sec 2.6 G3). The format is one JSON file per set under `evals/`, named `*.eval.json`. The shape (see `templates/eval-set.json`):
 
@@ -300,7 +314,7 @@ Like all Gold checks, `G3` respects the declared-tier ceiling. A plugin that dec
 
 The baseline `G3` requires *presence and execution* of cases, not a particular judging engine. The multi-tier eval engine (static, LLM-judge, Monte-Carlo) is roadmap; the structural coverage check is what ships and gates.
 
-## The Codex round-trip
+### The Codex round-trip
 
 Cross-agent emission is only credible if the emitted Codex manifest actually loads in Codex. `tests/integration/codex-roundtrip.test.mjs` proves it end to end against the real `codex` CLI. The test:
 
@@ -310,6 +324,8 @@ Cross-agent emission is only credible if the emitted Codex manifest actually loa
 4. Cleans up the install and marketplace in a `finally` block.
 
 The test skips gracefully when the `codex` CLI is not on `PATH`, unless `CODEX_REQUIRED=1` is set (in which case its absence is a failure). On Windows it sets `shell: true` so `spawnSync` can resolve the `.cmd` wrapper. This is the guard behind the claim that one canonical `library.json` emits a Codex manifest that actually works on Codex, not just one that validates against a schema.
+
+---
 
 ## Where to go next
 
