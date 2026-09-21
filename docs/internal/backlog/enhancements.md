@@ -906,7 +906,9 @@ page carries has to resolve to something.
 - **Not a check defect.** `G1`'s own module text was tested during B-09 and found accurate.
 - **Status:** open (recorded 2026-09-18).
 
-### E67 - the Standard REQUIRES a co-located `HISTORY.md` per component at Silver+, this repo is Gold with 35 components and zero of them, and nothing catches it  [honesty, effort M]
+### E67 - the Standard REQUIRED a co-located `HISTORY.md` per component at Silver+, this repo is Gold with 35 components and zero of them, and nothing caught it  [RESOLVED 2026-09-20, Standard 0.17]
+
+- **RESOLVED by route B, the demotion.** At Standard 0.17 the clause reads SHOULD rather than MUST, and both `tooling enforces this` parentheticals are deleted. Chosen over writing 35 files because a requirement its own author violated 35 times for months, uncaught, is a SHOULD that was mislabelled - and writing 35 files to satisfy a rule is the file-shape-over-substance failure E61 exists to name. The record below is left as written, because it is what was measured.
 
 - **Target:** `STANDARD.md` sec 2.5 and sec 3.10, or a new check. Which one is the decision.
 - **Measured 2026-09-19, five facts, each run rather than read:**
@@ -937,3 +939,12 @@ page carries has to resolve to something.
 - **Why it matters beyond the suite.** The same `finally` runs in production when the toolkit force-kills a hung bash candidate, so this is a real temp-directory leak, not only a test annoyance. It is small and self-limiting, which is why this is effort M and not a stop-the-line item.
 - **It is invisible to CI.** The test is Windows-only and skips on the Linux legs, so only a local Windows run can see it. That is also why it survived this long.
 - **The honest stopping point.** Two diagnoses were attempted and one was falsified by measurement. This repository's own rule is that after three attempts the problem is ill-posed; a third guess without a new instrument would be the wrong move. The next person should start by making `rmSync` report rather than by proposing a fix.
+
+### HC-09 - `G2`'s clause promised a passing CI the check cannot observe  [RULED 2026-09-20, Standard 0.17]
+
+- **The clause, as it read through Standard 0.16:** sec 2.6 `G2` - "**Self-hosting CI that passes.** The plugin ships CI that runs the full tier-applicable check suite via the portable scripts (Section 4) **and passes it**. 'Self-hosting' = the plugin passes its own validators." The verification column read "CI green + self-hosting check".
+- **What the check actually does:** `scripts/checks/self-hosting.mjs` runs four regular expressions over workflow TEXT. No network, no CI API, no run history. It cannot observe a run, a trigger firing, or whether CI is green. Proven by reading the module rather than by mutation, because the absence of a network call is not something a fixture can demonstrate.
+- **RULED: weaken the clause.** At Standard 0.17 `G2` reads "Self-hosting CI that **invokes** the gate", and the verification column names workflow text explicitly and says it is NOT a live CI result.
+- **Strengthening the check was considered and REFUSED.** Making the gate query a CI provider would make two people grading the same commit get different answers - the run could be green, red, queued, or the API could be down - and a deterministic offline grader is the property this whole toolkit sells. A relaxation can never make a passing plugin fail (sec 7.7), which is why it needs no migration window and could ride the graduations cut.
+- **This is NOT `HC-08`, and an earlier draft of the 0.17 note said it was.** `HC-07` is `G3`'s CI-execution promise and `HC-08` is `G1`'s hook scope-and-failure-behaviour requirement; **both remain open.** The `G2` gap had no number until this entry. The misattribution was caught by reading the two backlog entries before marking one ruled, which is the only reason it did not ship into a normative document.
+- **The same question is still open twice.** `HC-07` and `HC-08` are the identical shape - a clause promising what its check never reads - and each needs its own ruling. The precedent this entry sets is *weaken the clause where the honest check is the right check, strengthen the check where the property is statically legible*; on that reading `HC-07` (did anything execute the evals) is a candidate for strengthening rather than weakening, since a workflow that invokes the eval runner is visible in the same text `G2` already parses.
