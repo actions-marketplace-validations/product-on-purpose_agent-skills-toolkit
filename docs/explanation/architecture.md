@@ -142,7 +142,7 @@ The modules are pure functions over a loaded plugin; they do no I/O of their own
 
 The spine is **35 checks** total - `U1-U9`, `U11-U18` (Universal), `S1-S8` (Convergent), and `G1-G10` (Advanced).
 
-- The `G7` slot is the `docs-frontmatter` check, added in Standard v0.10.
+- The `G7` slot is the `docs-frontmatter` check (Standard v0.10).
 - `U13` (`skill-registration`) was added in Standard v0.12.
 - `U14` (`agent-restricted-fields`) was added in Standard v0.13.
 - `U18` (`command-size-cap`) was added in Standard v0.16.
